@@ -381,14 +381,49 @@ Lista final (alinhada aos IDs do catálogo da Task 8) — **18 padrões**, todos
 
 ## Task 14 — Execução no Projeto 3: `task-manager-api`
 
-- [ ] Copiar a skill: `cp -R code-smells-project/.claude task-manager-api/`
-- [ ] `cd task-manager-api && claude "/refactor-arch"`
-- [ ] Fase 1: Python/Flask 3.0.0, Flask-SQLAlchemy, domínio Task Manager, arquitetura "camadas parciais"
-- [ ] Fase 2: problemas encontrados mesmo com camadas existentes (segurança, performance, rotas gordas)
-- [ ] Salvar em `reports/audit-project-3.md`
-- [ ] Fase 3: melhora incremental sem reescrever do zero; `seed.py` continua funcionando; **todos** os endpoints respondem
-- [ ] Checklist + logs
+- [x] Copiar a skill: `cp -R code-smells-project/.claude/skills/refactor-arch task-manager-api/.claude/skills/` — `diff -r` idêntico (commit `12a317f`)
+- [x] `cd task-manager-api && claude "/refactor-arch ../reports/audit-project-3.md"`
+- [x] Fase 1: Python 3.11.15, Flask 3.0.0, SQLAlchemy 2.1.6 transitiva sem pin, domínio Task Manager, 15 arquivos (~1158 linhas), 3 tabelas, 22 rotas, **"Parcialmente em camadas"** com a lista exata de camadas não usadas (`services/`, `utils/helpers.py`, `is_overdue`/`validate_*`/`is_admin`) — saída em `reports/analysis-project-3.md`
+- [x] Fase 2: **19 findings** (CRITICAL 4 · HIGH 4 · MEDIUM 7 · LOW 4) — cobrem os 15 da análise manual; Deprecated **preenchida** (`Query.get()` com `LegacyAPIWarning` observado, Query API legada, `datetime.utcnow()`); pausa registrada
+- [x] Salvar em `reports/audit-project-3.md`; Fase 3 em `reports/refactor-project-3.md`
+- [x] Fase 3: melhora incremental — `models/` e `routes/` **mantidos e enxugados**, `controllers/`, `config/`, `middlewares/` criados, `services/` e `helpers.py` mortos removidos; `seed.py` usa a factory; **todos** os endpoints respondem
+- [x] Checklist + logs
 - [ ] Commit: `refactor(task-manager-api): apply refactor-arch skill`
+
+**Validação independente (fora da skill):**
+- Smoke test **26/26 sem ajuste no script**; também `GET /` e `GET /health` iguais à baseline.
+- Formato vs baseline: 22/26 idênticos; os 4 diffs são todos `password` removido (mudança aprovada).
+- **Valores** das 10 respostas de leitura (tasks, busca, stats, usuários, relatórios, categorias) **idênticos** à baseline, ignorando timestamps.
+- Ataques repetidos: criar admin anônimo → `role: user`; promover Maria → continua `user`; `priority: "alta"` → 400 JSON (antes 500 HTML); `PUT /categories` com `null` → 400; nenhum `password` nas respostas; rota inexistente → 404 JSON.
+- Boot com `PYTHONWARNINGS=always`: **nenhum `LegacyAPIWarning`** (antes: 1 por chamada de `Query.get`).
+- Greps: 0 `Query.get(`, 0 `datetime.utcnow`, 0 `except:`, 0 `debug=True`; rotas sem acesso a banco; controllers sem import de Flask. `md5` só em `models/user.py:45` (verificação de hash legado + rehash); `print` só no `seed.py` (CLI). `routes/task_routes.py`: 299 → 46 linhas.
+- **Remanescente (aceito pela regra §5):** rotas destrutivas públicas e token `fake-jwt-token-` previsível — registrado como recomendação.
+
+**Problema de qualidade da skill encontrado (→ Task 15):** F-07 ("exclusão de categoria deixa tasks órfãs", HIGH) era **falso positivo** — o `backref` do SQLAlchemy já anula a FK (verificado na análise manual da Task 4). A própria skill detectou na Fase 3, via baseline, e anotou a correção no relatório; mas a Fase 2 não deveria tê-lo reportado. Sem ele, o relatório tem 18 achados válidos (HIGH 3) — critérios de aceite continuam atendidos.
+
+**Checklist de validação — Projeto 3:**
+
+| Fase | Item | Status |
+|---|---|---|
+| 1 | Linguagem detectada corretamente | ✅ Python 3.11.15 |
+| 1 | Framework detectado corretamente | ✅ Flask 3.0.0 + Flask-SQLAlchemy 3.1.1 (SQLAlchemy 2.1.6) |
+| 1 | Domínio descrito corretamente | ✅ Task Manager (tasks, usuários, categorias, relatórios) |
+| 1 | Nº de arquivos condiz com a realidade | ✅ 15 arquivos / ~1158 linhas |
+| 2 | Relatório segue o template | ✅ |
+| 2 | Cada finding tem arquivo e linhas exatos | ✅ |
+| 2 | Findings ordenados CRITICAL → LOW | ✅ |
+| 2 | Mínimo de 5 findings | ✅ 19 (18 válidos) |
+| 2 | Detecção de APIs deprecated incluída | ✅ F-13 + tabela com 3 linhas |
+| 2 | Pausa e pede confirmação antes da Fase 3 | ✅ |
+| 3 | Estrutura de diretórios segue MVC | ✅ `config/`, `models/`, `controllers/`, `routes/` (Views), `middlewares/`, `utils/` |
+| 3 | Configuração extraída (sem hardcoded) | ✅ `config/settings.py` + `.env.example` |
+| 3 | Models abstraem dados | ✅ `Task`, `User`, `Category` com consultas e regras de domínio |
+| 3 | Views/Routes separadas | ✅ 5 blueprints + `serializers.py` |
+| 3 | Controllers concentram o fluxo | ✅ 4 controllers (sem import de Flask) |
+| 3 | Error handling centralizado | ✅ `middlewares/error_handler.py` |
+| 3 | Entry point claro | ✅ `app.py` → `create_app()` |
+| 3 | Aplicação inicia sem erros | ✅ |
+| 3 | Endpoints originais respondem corretamente | ✅ 26/26 + `/` e `/health` |
 
 ---
 
