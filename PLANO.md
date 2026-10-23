@@ -243,12 +243,13 @@ Lista sugerida (cobre os 3 projetos):
 
 ## Task 9 — Referência: Template de relatório (`audit-report-template.md`)
 
-- [ ] Cabeçalho: Project, Stack, Files (n analyzed | ~linhas)
-- [ ] `## Summary` com contagem `CRITICAL: x | HIGH: x | MEDIUM: x | LOW: x`
-- [ ] `## Findings` — bloco por finding: `### [SEVERIDADE] Nome`, `File: caminho:linha(s)`, `Description`, `Impact`, `Recommendation` (referenciando o ID do catálogo/playbook)
-- [ ] Regras: ordenação CRITICAL → LOW, linhas exatas obrigatórias, um finding por ocorrência relevante
-- [ ] Rodapé `Total: N findings` + pergunta de confirmação
-- [ ] Exemplo preenchido
+- [x] Cabeçalho: Project, Stack, Files (n analyzed | ~linhas) + Date
+- [x] `## Summary` com contagem `CRITICAL: x | HIGH: x | MEDIUM: x | LOW: x` + tabela-índice dos achados
+- [x] `## Findings` — bloco por finding: `### F-xx [SEVERIDADE] Nome`, `File: caminho:linha(s)`, `Catalog: AP-xx`, `Description`, `Impact`, `Recommendation → PB-xx`, `Verified`
+- [x] Regras: ordenação CRITICAL → LOW, linhas exatas obrigatórias, um finding por anti-pattern (ocorrências agrupadas)
+- [x] Seções fixas `## Deprecated APIs` (sempre presente) e `## Architecture Notes`
+- [x] Rodapé `Total: N findings` + pergunta de confirmação
+- [x] Exemplo preenchido (projeto fictício, para não enviesar a skill) + checklist antes de imprimir ✅
 
 ---
 
