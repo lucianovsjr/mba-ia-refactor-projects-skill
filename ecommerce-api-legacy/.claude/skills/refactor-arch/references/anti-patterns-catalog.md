@@ -4,10 +4,11 @@ Referência da **Fase 2** (auditoria) e da **re-auditoria da Fase 3**. Cada entr
 
 ## Como usar
 
-1. Para cada arquivo-fonte, percorra **todas** as entradas. Os comandos `grep` servem para achar candidatos; **confirme lendo o código** antes de registrar. Rode-os a partir da raiz do projeto, acrescentando `--exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=venv`, e mantenha as aspas em `--include="*.py"` (sem elas o zsh expande o glob e o comando falha).
-2. Registre o `arquivo:linha` exato de cada ocorrência. Agrupe ocorrências do mesmo anti-pattern em um único achado.
-3. **Ajuste de severidade:** a severidade da tabela é o padrão. Suba um nível quando a ocorrência for explorável sem autenticação ou afetar dinheiro/dados pessoais; desça um nível quando o código for morto ou inalcançável. Justifique o ajuste na descrição.
-4. Os sinais estão escritos para Python e JavaScript/TypeScript; traduza-os para o idioma da stack detectada (Go, Java, Ruby, PHP...).
+1. Para cada arquivo-fonte, percorra **todas** as entradas. Os comandos `grep` servem para achar candidatos; **confirme lendo o código** antes de registrar. Rode-os a partir da raiz do projeto, acrescentando `--exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=venv`, e mantenha as aspas em `--include="*.py"` (sem elas o zsh expande o glob e o comando falha). No zsh, variáveis **não** são divididas em palavras: `F="a b"; grep x $F` procura um arquivo chamado `a b`. Escreva os caminhos direto no comando, ou use `--include`.
+2. **Quando não der para ter certeza pela leitura** (comportamento implícito de ORM/framework, cascatas, defaults de serialização), confirme com a app rodando antes de registrar, ou deixe de fora. Um falso positivo custa trabalho na Fase 3 e tira a credibilidade do relatório.
+3. Registre o `arquivo:linha` exato de cada ocorrência. Agrupe ocorrências do mesmo anti-pattern em um único achado.
+4. **Ajuste de severidade:** a severidade da tabela é o padrão. Suba um nível quando a ocorrência for explorável sem autenticação ou afetar dinheiro/dados pessoais; desça um nível quando o código for morto ou inalcançável. Justifique o ajuste na descrição.
+5. Os sinais estão escritos para Python e JavaScript/TypeScript; traduza-os para o idioma da stack detectada (Go, Java, Ruby, PHP...).
 
 ## Escala de severidade
 
@@ -268,6 +269,8 @@ grep -rnE "^\s*global\s+\w+|^(let|var)\s+\w+\s*=\s*(\{\}|\[\]|0)" --include="*.p
 - `DELETE` de uma entidade pai sem tratar os filhos (sem `FOREIGN KEY ... ON DELETE`, sem cascade), com o erro ignorado e sucesso sempre retornado.
 - Quantidades/valores negativos aceitos em operações financeiras ou de estoque.
 - FK lógica (ex.: `usuario_id`) aceita sem verificar se o registro existe.
+
+**Não é órfão (evite falso positivo):** com ORM, a exclusão do pai pode já tratar os filhos. No SQLAlchemy, um `relationship`/`backref` sem `cascade="all, delete-orphan"` faz `UPDATE filho SET fk = NULL` ao apagar o pai pela sessão (`db.session.delete(pai)`), então não sobra referência quebrada. Comportamento equivalente aparece em `onDelete: 'SET NULL'` (Sequelize/TypeORM) e em `ON DELETE CASCADE/SET NULL` com FKs ativas. **Antes de reportar órfãos num projeto com ORM, confirme dinamicamente**: apague um pai com filhos na app original e consulte um filho. Só registre o achado se a FK continuar apontando para o registro removido. Exclusão via SQL puro (`DELETE FROM ...` / `query.delete()` em massa) ignora esse comportamento e continua sendo achado.
 
 **Impacto:** dados financeiros e de estoque inconsistentes, registros órfãos e relatórios corrompidos.
 **Recomendação:** use uma transação única por caso de uso, com rollback em qualquer falha, verifique existência e limites antes de escrever e trate os filhos na exclusão.

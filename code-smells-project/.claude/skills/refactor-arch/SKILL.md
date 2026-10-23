@@ -125,6 +125,7 @@ Regras durante a transformação:
 - Apague os arquivos antigos assim que o conteúdo deles tiver sido movido. Não deixe duplicatas mortas para trás.
 - Mantenha os paths, métodos e formatos de resposta das rotas **idênticos**; as únicas exceções são as correções de segurança e integridade das regras gerais.
 - Se você introduzir uma nova dependência, ela precisa ser amplamente adotada, precisa ser adicionada ao manifesto e precisa ser instalada. Prefira a biblioteca padrão quando ela bastar (por exemplo `hashlib.pbkdf2_hmac` / `werkzeug.security`, ou `crypto.scrypt`).
+- **Atualizar uma dependência existente para uma nova versão major** só é permitido quando isso corrige um achado (API deprecated, vulnerabilidade). Antes de atualizar, confira se a versão do runtime instalada atende ao requisito da nova versão (`engines`, `python_requires`). Depois, declare esse requisito no manifesto (`"engines"` no `package.json`, `python_requires`) e registre a atualização em `## Changes` e em `## How to run`.
 - Mantenha os dados e scripts de seed funcionando, e mantenha funcionando os comandos de boot existentes (crie um novo só se o antigo não puder funcionar, e documente-o).
 
 ### 3.3 Validação (obrigatória: não pule e não declare sucesso sem evidência)
@@ -132,6 +133,7 @@ Regras durante a transformação:
 1. Instale as dependências, se mudaram. **Suba** a aplicação refatorada em background, espere até ela ficar pronta e confirme que não há erros no log de inicialização.
 2. Rode **as mesmas requisições da baseline** e compare os status codes e o formato das respostas. Toda diferença precisa ser corrigida ou justificada como uma das mudanças de contrato permitidas.
 3. **Re-audite** o código refatorado contra o catálogo. Corrija qualquer achado CRITICAL/HIGH restante. Liste os achados MEDIUM/LOW que sobrarem, com o motivo de terem sido mantidos.
+   - Se a baseline ou a re-auditoria mostrar que um achado da Fase 2 era **falso positivo**, não o apague: no relatório salvo, troque o `Verified:` dele por `no — Correção (Fase 3): falso positivo. <evidência>` e cite a correção em `## Changes`.
 4. Derrube a aplicação e restaure o banco/estado.
 5. Se algo falhar, corrija e rode a validação de novo. Repita até passar, ou até encontrar um bloqueio que você não consiga resolver. Nesse caso, reporte o bloqueio com honestidade: nunca imprima ✓ para uma verificação que falhou.
 

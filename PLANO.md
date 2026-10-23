@@ -431,13 +431,28 @@ Lista final (alinhada aos IDs do catálogo da Task 8) — **18 padrões**, todos
 
 **Objetivo:** corrigir lacunas descobertas nas Tasks 12–14 (o desafio prevê 2–4 iterações).
 
-- [ ] Anotar, por execução, o que falhou: finding não detectado, linha errada, estrutura inadequada, app quebrada, skill não pausou
-- [ ] Ajustar a referência correspondente (catálogo, playbook, guidelines) — não "remendar" o código manualmente
-- [ ] Para re-executar: `git restore`/`git checkout` do projeto ao estado original e rodar a skill de novo
-- [ ] Manter **a mesma versão da skill** nos 3 projetos (comparar com `diff -r` entre as 3 pastas `.claude/skills/refactor-arch`)
-- [ ] Registrar desafios e soluções (alimenta a seção B do README)
+- [x] Anotar, por execução, o que falhou: finding não detectado, linha errada, estrutura inadequada, app quebrada, skill não pausou
+- [x] Ajustar a referência correspondente (catálogo, playbook, guidelines) — não "remendar" o código manualmente
+- [x] Para re-executar: `git restore`/`git checkout` do projeto ao estado original e rodar a skill de novo — **não foi necessário**: os critérios de aceite passaram nas 3 execuções na 1ª tentativa
+- [x] Manter **a mesma versão da skill** nos 3 projetos (comparar com `diff -r` entre as 3 pastas `.claude/skills/refactor-arch`)
+- [x] Registrar desafios e soluções (alimenta a seção B do README)
 
-**Pronto quando:** os 4 critérios de aceite passam em 3/3 projetos com a skill idêntica nas três cópias.
+**Lições das 3 execuções e ajustes feitos:**
+
+| # | Observado | Onde | Ajuste |
+|---|---|---|---|
+| 1 | Falso positivo F-07 (P3): "categoria apagada deixa tasks órfãs" — o `backref` do SQLAlchemy já anula a FK | `anti-patterns-catalog.md` AP-11 | Bloco "Não é órfão": exige confirmação dinâmica antes de reportar órfãos com ORM |
+| 2 | Regra geral para comportamento implícito de ORM/framework | `anti-patterns-catalog.md` "Como usar" | Novo passo 2: confirmar com a app rodando ou não registrar |
+| 3 | Greps com lista de arquivos em variável falham no zsh (sem word splitting) | `anti-patterns-catalog.md` "Como usar" | Aviso explícito |
+| 4 | `curl -H` guardado em variável sem aspas → body não parseado → 400 falso | `project-analysis.md` §7.4 | Aviso sobre aspas no header |
+| 5 | P2: skill subiu `sqlite3` 5→6 (exige Node ≥ 20.17) | `SKILL.md` §3.2 | Upgrade major só para corrigir achado, checando o runtime, declarando `engines`/`python_requires` e documentando |
+| 6 | P3: skill corrigiu o falso positivo no relatório salvo (bom comportamento, mas não estava previsto) | `SKILL.md` §3.3 | Formalizado: marcar `Correção (Fase 3): falso positivo` sem apagar o achado |
+
+**O que funcionou bem e foi mantido:** pausa na Fase 2 (3/3), detecção do bloqueio da porta 5000 (P1, P3), contrato preservado com exceções de segurança listadas, reaproveitamento das camadas no P3, achado novo não previsto na análise manual (DoS por `card` numérico no P2).
+
+**Versão da skill:** os relatórios em `reports/` foram gerados com a versão anterior a estes ajustes (commits até `12a317f`). Os ajustes são incrementais (prevenção de falso positivo e robustez de comandos) e não mudam o fluxo das fases.
+
+**Pronto quando:** os 4 critérios de aceite passam em 3/3 projetos com a skill idêntica nas três cópias. ✅
 
 ---
 

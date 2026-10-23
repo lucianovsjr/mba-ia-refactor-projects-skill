@@ -209,4 +209,6 @@ curl -s -o /tmp/resp.json -w "%{http_code}" -X POST -H "Content-Type: applicatio
   -d '{"campo":"valor"}' http://localhost:<porta>/rota
 ```
 
+Sempre passe o header entre aspas (`-H "Content-Type: application/json"`). Um header guardado em variável sem aspas (`H=-H Content-Type:...; curl $H`) é enviado como um único argumento no zsh. O body chega sem ser interpretado e a app responde 400, um **falso negativo do teste**, não da aplicação.
+
 Inclua, por recurso, um caso de sucesso e, quando fizer sentido, um 404 ou 400. Execute as operações destrutivas por último. A resposta original define o contrato: status code, tipo de conteúdo (JSON vs texto) e chaves de topo do corpo.
