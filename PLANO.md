@@ -336,14 +336,46 @@ Lista final (alinhada aos IDs do catálogo da Task 8) — **18 padrões**, todos
 
 ## Task 13 — Execução no Projeto 2: `ecommerce-api-legacy`
 
-- [ ] Copiar a skill: `cp -R code-smells-project/.claude ecommerce-api-legacy/`
-- [ ] `cd ecommerce-api-legacy && claude "/refactor-arch"`
-- [ ] Fase 1: Node.js, Express 4.x, sqlite3, domínio LMS com checkout, 3 arquivos-fonte
-- [ ] Fase 2: ≥5 findings, ≥1 CRITICAL/HIGH, APIs deprecated se houver, pausa
-- [ ] Salvar em `reports/audit-project-2.md`
-- [ ] Fase 3 + validação com o `api.http` / smoke test
-- [ ] Checklist + logs
-- [ ] Commit: `refactor(ecommerce-api-legacy): apply refactor-arch skill`
+- [x] Copiar a skill: `cp -R code-smells-project/.claude/skills/refactor-arch ecommerce-api-legacy/.claude/skills/` — `diff -r` idêntico (antes e depois da execução)
+- [x] `cd ecommerce-api-legacy && claude "/refactor-arch ../reports/audit-project-2.md"`
+- [x] Fase 1: Node v20.20.0, Express 4.22.1 (declarada ^4.18.2), sqlite3 5.1.7 em memória, domínio LMS com checkout, 3 arquivos (~180 linhas), 5 tabelas, 3 rotas — saída em `reports/analysis-project-2.md`
+- [x] Fase 2: **20 findings** (CRITICAL 5 · HIGH 6 · MEDIUM 5 · LOW 4) — cobrem os 16 da análise manual **e acharam um novo**: `"card": 4111` (número) derruba o processo (DoS sem auth); seção Deprecated **preenchida** (API de callbacks do sqlite3 + 7 dependências transitivas deprecated); pausa registrada
+- [x] Salvar em `reports/audit-project-2.md`; Fase 3 em `reports/refactor-project-2.md`
+- [x] Fase 3 + validação com o smoke test
+- [x] Checklist + logs
+- [ ] Commits: `chore(ecommerce-api-legacy): add refactor-arch skill` e `refactor(ecommerce-api-legacy): apply refactor-arch skill`
+
+**Validação independente (fora da skill):**
+- Smoke test **7/7 sem nenhum ajuste no script** (os casos da baseline continuam válidos: o checkout do Leonan usa a senha correta `123`).
+- Formato vs baseline: 6/7 idênticos; único diff é o texto do DELETE (mudança declarada). Erros seguem em texto puro, como na baseline. Relatório financeiro com o mesmo conteúdo, agora em ordem determinística.
+- Ataques repetidos: checkout em nome de terceiro com senha errada/ausente → 401; `card` numérico → 400 e o processo segue vivo; `card: "4"` → 400; DELETE 999 → 404; após DELETE 1 o relatório não tem mais "Unknown" (cascade).
+- Log com cartão mascarado (`**** **** **** 4444`) e sem chave do gateway; boot limpo com `--trace-deprecation`.
+- Greps do catálogo: 0 SQL concatenado, 0 segredos literais, 0 `console.*` fora do logger, 0 `verbose()`/estado global.
+- **Atenção:** a skill atualizou dependências (`sqlite3` 5.1.7 → 6.0.1, `express` → 4.22.3 via `npm audit fix`) para eliminar as transitivas deprecated. O sqlite3 6.x exige **Node ≥ 20.17** (ambiente local: 20.20.0 ✅). Rota inexistente continua 404 HTML do Express (igual à baseline) — LOW remanescente.
+
+**Checklist de validação — Projeto 2:**
+
+| Fase | Item | Status |
+|---|---|---|
+| 1 | Linguagem detectada corretamente | ✅ JavaScript / Node v20.20.0 |
+| 1 | Framework detectado corretamente | ✅ Express 4.22.1 (instalada vs ^4.18.2 declarada) |
+| 1 | Domínio descrito corretamente | ✅ LMS / cursos com checkout |
+| 1 | Nº de arquivos condiz com a realidade | ✅ 3 arquivos / ~180 linhas |
+| 2 | Relatório segue o template | ✅ |
+| 2 | Cada finding tem arquivo e linhas exatos | ✅ |
+| 2 | Findings ordenados CRITICAL → LOW | ✅ |
+| 2 | Mínimo de 5 findings | ✅ 20 |
+| 2 | Detecção de APIs deprecated incluída | ✅ F-15 + tabela com 2 linhas |
+| 2 | Pausa e pede confirmação antes da Fase 3 | ✅ |
+| 3 | Estrutura de diretórios segue MVC | ✅ `src/{config,database,models,controllers,routes,middlewares,services,utils}` |
+| 3 | Configuração extraída (sem hardcoded) | ✅ `src/config/index.js` + `.env.example` |
+| 3 | Models abstraem dados | ✅ `userModel`, `courseModel`, `enrollmentModel`, `reportModel` |
+| 3 | Views/Routes separadas | ✅ `checkoutRoutes`, `adminRoutes`, `userRoutes` |
+| 3 | Controllers concentram o fluxo | ✅ 3 controllers + `paymentService` |
+| 3 | Error handling centralizado | ✅ `middlewares/errorHandler.js` (+ `asyncHandler`) |
+| 3 | Entry point claro | ✅ `src/app.js` → `buildApp()` em `server.js` |
+| 3 | Aplicação inicia sem erros | ✅ `npm start` |
+| 3 | Endpoints originais respondem corretamente | ✅ 7/7 |
 
 ---
 
