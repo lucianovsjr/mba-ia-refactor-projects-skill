@@ -171,16 +171,23 @@ Estrutura proposta:
     └── refactoring-playbook.md
 ```
 
-- [ ] Frontmatter: `name: refactor-arch` e `description` clara (quando usar: auditar e refatorar projeto para MVC)
-- [ ] Corpo do SKILL.md como prompt com **3 fases sequenciais**, cada uma apontando qual referência ler:
+- [x] Frontmatter: `name: refactor-arch` e `description` clara (quando usar: auditar e refatorar projeto para MVC) + `argument-hint` para o caminho do relatório
+- [x] Corpo do SKILL.md como prompt com **3 fases sequenciais**, cada uma apontando qual referência ler:
   - **Fase 1 — Análise:** ler `project-analysis.md`; detectar linguagem, framework+versão, dependências, banco, domínio, arquitetura atual, nº de arquivos, tabelas; imprimir bloco `PHASE 1: PROJECT ANALYSIS` no formato do desafio
   - **Fase 2 — Auditoria:** ler `anti-patterns-catalog.md` + `audit-report-template.md`; varrer cada arquivo; registrar arquivo:linha exatos; ordenar por severidade; salvar o relatório em `reports/audit-project-N.md` (ou caminho informado); **PARAR e perguntar `Proceed with refactoring (Phase 3)? [y/n]`** — nenhuma alteração de arquivo antes da confirmação
   - **Fase 3 — Refatoração:** ler `mvc-guidelines.md` + `refactoring-playbook.md`; planejar estrutura alvo adaptada ao estado atual (monolito vs. parcialmente organizado); aplicar transformações; preservar contratos dos endpoints (paths, métodos, formato JSON); validar
-- [ ] Regras de validação explícitas na Fase 3: instalar deps, subir a app em background, chamar cada endpoint original, comparar status/forma, derrubar o processo, re-auditar contra o catálogo; se falhar, corrigir e repetir
-- [ ] Bloco final `PHASE 3: REFACTORING COMPLETE` com nova árvore e checklist ✓/✗
-- [ ] Regras gerais: agnóstico de stack (nada de nomes de arquivos dos projetos no SKILL.md), não inventar findings, não alterar comportamento público
+- [x] Regras de validação explícitas na Fase 3: instalar deps, subir a app em background, chamar cada endpoint original, comparar status/forma, derrubar o processo, re-auditar contra o catálogo; se falhar, corrigir e repetir
+- [x] Bloco final `PHASE 3: REFACTORING COMPLETE` com nova árvore e checklist ✓/✗
+- [x] Regras gerais: agnóstico de stack (nada de nomes de arquivos dos projetos no SKILL.md), não inventar findings, não alterar comportamento público
 
-**Pronto quando:** `/refactor-arch` aparece no Claude Code ao rodar `claude` dentro de `code-smells-project/`.
+**Decisões de design:**
+- SKILL.md e referências **em português**; banners e rótulos de saída mantidos em inglês, idênticos ao exemplo do desafio. Conhecimento de domínio fica nas 5 referências, lidas na fase em que são usadas.
+- A própria skill captura a baseline de endpoints (Fase 1 inventaria, Fase 3.0 grava respostas) — não depende dos scripts de `scripts/`, o que mantém a skill copiável.
+- Relatório salvo só **depois** da resposta do usuário, em `$ARGUMENTS` ou `reports/audit-report.md` — nada é escrito antes da confirmação.
+- Única quebra de contrato permitida: remoção de dados sensíveis, que deve ser listada no resumo.
+- A skill não faz commit; o usuário revisa e commita.
+
+**Pronto quando:** `/refactor-arch` aparece no Claude Code ao rodar `claude` dentro de `code-smells-project/`. ⏳ (frontmatter validado; confirmação visual no CLI fica para a Task 12, após as referências existirem)
 
 ---
 
