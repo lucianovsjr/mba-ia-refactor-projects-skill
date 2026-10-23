@@ -99,8 +99,8 @@ Plano derivado do [DESAFIO.md](./DESAFIO.md). Cada task tem objetivo, subtarefas
 
 **Arquivos:** `src/app.js` (14), `src/AppManager.js` (141), `src/utils.js` (25), `api.http`.
 
-- [ ] Ler os arquivos por completo e o `api.http`
-- [ ] Procurar especificamente:
+- [x] Ler os arquivos por completo e o `api.http`
+- [x] Procurar especificamente:
   - `AppManager` como God Class (DB + rotas + regra de negócio + checkout)
   - Credenciais/chaves de pagamento hardcoded
   - SQL concatenado com input do usuário
@@ -111,9 +111,11 @@ Plano derivado do [DESAFIO.md](./DESAFIO.md). Cada task tem objetivo, subtarefas
   - Ausência de validação, status HTTP incorretos
   - APIs deprecated do Node/Express (ex.: `new Buffer()`, `body-parser` separado, `res.send(status, body)`, métodos de crypto obsoletos)
   - Magic numbers, nomes genéricos, `var`
-- [ ] Registrar no mesmo formato da Task 2
+- [x] Registrar no mesmo formato da Task 2
 
-**Pronto quando:** ≥5 achados na mesma distribuição mínima.
+**Entregável:** seção "Projeto 2" em [`docs/manual-analysis.md`](docs/manual-analysis.md).
+**Resultado:** 16 achados (CRITICAL 5 · HIGH 4 · MEDIUM 4 · LOW 3). Comprovados: colisão do `badCrypto`, checkout em nome de terceiros sem senha, cartão + chave live no log, DELETE gerando órfãos e ordem não determinística no relatório. API legada/deprecated: driver `sqlite3` em estilo callback + dependência transitiva deprecated.
+**Pronto quando:** ≥5 achados na mesma distribuição mínima. ✅
 
 ---
 

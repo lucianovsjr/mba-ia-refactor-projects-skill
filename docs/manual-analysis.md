@@ -85,3 +85,83 @@ Achados identificados por leitura do código e por testes contra a aplicação r
 *Por que importa:* prejudica a leitura e esconde intenção.
 
 **APIs deprecated:** nenhuma identificada. O projeto usa Flask 3.1.1 e flask-cors 5.0.1 com APIs atuais (`add_url_rule`, `jsonify`, `sqlite3` padrão).
+
+---
+
+## Projeto 2 — ecommerce-api-legacy (Node.js/Express, LMS com checkout)
+
+**Arquivos analisados:** `src/app.js` (14 linhas), `src/AppManager.js` (141), `src/utils.js` (25), ~180 linhas no total.
+**Stack:** Node.js 20, Express 4.22.1, sqlite3 5.1.7 (banco em memória).
+**Arquitetura atual:** uma única classe `AppManager` cria a conexão, define o schema, insere o seed, registra as rotas e executa as regras de checkout, pagamento e relatório. `utils.js` mistura configuração com segredos, cache global e "criptografia".
+
+**Resumo:** CRITICAL: 5 · HIGH: 4 · MEDIUM: 4 · LOW: 3 → **16 achados**
+
+| # | Severidade | Problema | Local |
+|---|---|---|---|
+| 2.1 | CRITICAL | Credenciais de produção hardcoded (banco, gateway de pagamento, SMTP) | `src/utils.js:1-7` |
+| 2.2 | CRITICAL | Número do cartão e chave do gateway escritos no log | `src/AppManager.js:45` |
+| 2.3 | CRITICAL | "Hash" de senha caseiro e trivialmente colidível; senhas padrão e em texto puro | `src/utils.js:17-23`, `src/AppManager.js:18, 68` |
+| 2.4 | CRITICAL | Ausência de autenticação e autorização (checkout em nome de terceiros, rotas admin abertas) | `src/AppManager.js:40, 73-75, 80, 131` |
+| 2.5 | CRITICAL | God Class `AppManager`: DB, schema, seed, rotas e regras no mesmo lugar | `src/AppManager.js:4-139` |
+| 2.6 | HIGH | Checkout com 3 escritas encadeadas sem transação; erro do audit log ignorado | `src/AppManager.js:50-61` |
+| 2.7 | HIGH | Regra de negócio no handler da rota e acoplamento sem DI | `src/AppManager.js:7, 43-75`, `src/app.js:8-10` |
+| 2.8 | HIGH | Estado global mutável exportado (cache sem limite, contador nunca atualizado) | `src/utils.js:9-15, 25` |
+| 2.9 | HIGH | Exclusão de usuário deixa matrículas e pagamentos órfãos e ignora erros | `src/AppManager.js:131-137` |
+| 2.10 | MEDIUM | Queries N+1 no relatório financeiro, com ordem não determinística | `src/AppManager.js:83-127` |
+| 2.11 | MEDIUM | Callback hell e uso de API legada baseada em callbacks (deprecated) | `src/AppManager.js:37-77, 83-128`, `src/AppManager.js:1` |
+| 2.12 | MEDIUM | Erros engolidos, respostas em texto puro e status HTTP incorretos; sem handler central | `src/AppManager.js:35, 38, 41, 48, 51, 55, 57, 70, 92-93, 104-106, 133-135` |
+| 2.13 | MEDIUM | Validação de entrada ausente | `src/AppManager.js:29-35, 46` |
+| 2.14 | LOW | Magic numbers e strings | `src/AppManager.js:46, 68`, `src/utils.js:6, 19-22` |
+| 2.15 | LOW | Nomenclatura ruim e código morto | `src/AppManager.js:29-33`, `src/utils.js:2-5, 10, 17`, `src/app.js:13` |
+| 2.16 | LOW | `console.log` como mecanismo de log | `src/utils.js:13`, `src/app.js:13`, `src/AppManager.js:45` |
+
+### Detalhamento e justificativas
+
+**2.1 [CRITICAL] Credenciais hardcoded.** O objeto `config` contém `dbPass: "senha_super_secreta_prod_123"`, `paymentGatewayKey: "pk_live_1234567890abcdef"` (chave **live**) e `smtpUser` (`src/utils.js:1-7`).
+*Por que importa:* os segredos de produção ficam versionados no git e qualquer pessoa com acesso ao repositório pode usá-los.
+
+**2.2 [CRITICAL] Dados de cartão no log.** `console.log(\`Processando cartão ${cc} na chave ${config.paymentGatewayKey}\`)` (`src/AppManager.js:45`). **Comprovado:** o log do servidor registra `Processando cartão 4000000000000000 na chave pk_live_1234567890abcdef`.
+*Por que importa:* viola o PCI-DSS (o PAN completo não pode ser logado) e espalha a chave do gateway em qualquer agregador de logs.
+
+**2.3 [CRITICAL] Criptografia caseira de senha.** `badCrypto` converte a senha para base64, pega os 2 primeiros caracteres, repete e corta em 10 (`src/utils.js:17-23`). O resultado depende só do início da senha. **Comprovado:** `senhaforte`, `senha123` e `sen` geram o mesmo valor `c2c2c2c2c2`. O loop de 10.000 iterações não acrescenta segurança. O seed grava a senha `'123'` em texto puro (`src/AppManager.js:18`), e um checkout sem `pwd` cria o usuário com a senha padrão `"123456"` (`src/AppManager.js:68`).
+*Por que importa:* senhas diferentes colidem e o valor é reversível, então o "hash" não protege nada.
+
+**2.4 [CRITICAL] Sem autenticação nem autorização.** No checkout, quando o email já existe, o fluxo segue com `user.id` **sem verificar a senha** (`src/AppManager.js:40, 73-75`). **Comprovado:** um checkout com `eml: leonan@fullcycle.com.br` e `pwd: "errada"` retorna `Sucesso` e cria a matrícula na conta do Leonan. `GET /api/admin/financial-report` (`80`) e `DELETE /api/users/:id` (`131`) não têm nenhum controle de acesso.
+*Por que importa:* qualquer pessoa pode fazer compras em nome de terceiros, ler dados financeiros e apagar usuários.
+
+**2.5 [CRITICAL] God Class.** `AppManager` abre a conexão (`7`), cria as tabelas e o seed (`10-23`), registra todas as rotas (`25-138`) e implementa checkout, pagamento, cadastro de usuário e relatório dentro dos handlers. Não existe nenhuma camada de model, controller ou config.
+*Por que importa:* nada pode ser testado ou reutilizado de forma isolada, e qualquer mudança passa pelo mesmo arquivo.
+
+**2.6 [HIGH] Checkout sem transação.** Matrícula, pagamento e audit log são 3 `INSERT`s encadeados, sem `BEGIN`/`COMMIT`/`ROLLBACK` (`src/AppManager.js:50-61`). Se o pagamento falhar, a matrícula já gravada permanece. O erro do audit log é ignorado (`57`), e a resposta de sucesso é enviada de qualquer forma.
+*Por que importa:* pode haver aluno matriculado sem pagamento registrado, ou compra sem trilha de auditoria.
+
+**2.7 [HIGH] Regra de negócio no handler e acoplamento.** A aprovação do pagamento (`cc.startsWith("4")`, `46`), a criação implícita de usuário (`66-72`) e a orquestração de matrícula estão dentro do callback da rota. A conexão é criada no construtor (`7`) e `app.js` instancia tudo diretamente (`src/app.js:8-10`), sem injeção de dependência.
+*Por que importa:* não é possível trocar o gateway ou o banco, nem testar a regra de checkout sem HTTP e sem SQLite.
+
+**2.8 [HIGH] Estado global mutável.** `globalCache` cresce sem limite a cada checkout (`src/utils.js:9, 12-15`). `totalRevenue` é declarado, nunca atualizado e exportado como valor primitivo (`10, 25`), então quem importa recebe uma cópia congelada.
+*Por que importa:* gera vazamento de memória, estado compartilhado entre requisições e comportamento imprevisível em múltiplas instâncias.
+
+**2.9 [HIGH] Integridade na exclusão.** `DELETE /api/users/:id` remove só a linha de `users`, ignora o `err` e sempre responde 200, inclusive para IDs inexistentes (`src/AppManager.js:131-137`). As tabelas não têm `FOREIGN KEY` (`12-16`). **Comprovado:** `DELETE /api/users/999` retorna 200, e depois de `DELETE /api/users/1` o relatório financeiro lista os alunos como `"Unknown"`.
+*Por que importa:* sobram dados órfãos, o relatório fica corrompido e o cliente recebe uma resposta enganosa. A própria mensagem de resposta admite o problema.
+
+**2.10 [MEDIUM] N+1 no relatório.** Para cada curso há 1 query de matrículas (`92`), e para cada matrícula mais 2 queries, de usuário e de pagamento (`104, 106`): no total, 1 + C + 2·E queries. O agrupamento é feito com contadores manuais (`coursesPending`, `enrPending`). **Comprovado:** a ordem dos cursos na resposta muda entre execuções (Docker aparece antes de Clean Architecture), porque depende da ordem em que os callbacks terminam.
+*Por que importa:* a latência cresce com o volume e a saída não é determinística. Um único `JOIN` com `GROUP BY` resolveria.
+
+**2.11 [MEDIUM] Callback hell e API legada.** São até 6 níveis de callbacks aninhados (`37-77`, `83-128`), com o truque `const self = this` (`26`) para acessar `this.lastID`. O driver `sqlite3` é usado no estilo de callback anterior às Promises, com `.verbose()` (modo de debug) em produção (`1`). O `npm install` desse driver também traz dependência transitiva marcada como **deprecated** (`@npmcli/move-file@1.1.2`, via `sqlite3 → node-gyp`).
+*Recomendação moderna:* `async/await` sobre um wrapper com Promises (`util.promisify` ou `sqlite`/`better-sqlite3`), ou o módulo nativo `node:sqlite` em Node ≥ 22.5.
+*Por que importa:* o fluxo fica difícil de ler e propaga erros mal, como mostra o item 2.12.
+
+**2.12 [MEDIUM] Error handling.** Vários `err` são ignorados ou mal tratados. Em `92-93`, se a query falhar, `enrollments.length` lança `TypeError` e **derruba o processo**. Em `104-106` e `133`, os erros são ignorados. As respostas de erro são texto puro servido como `text/html` (`35, 38, 41, 48, 51, 55, 70`), enquanto as de sucesso são JSON. Qualquer erro na busca do curso vira 404 (`38`). Não há middleware de erro nem handler para rotas inexistentes.
+*Por que importa:* os clientes não conseguem tratar erros de forma uniforme, e uma falha de banco pode derrubar o servidor.
+
+**2.13 [MEDIUM] Validação ausente.** Só há um teste de presença dos campos (`35`). `pwd` é opcional e não há validação de formato de email, de cartão (número, tamanho, Luhn) nem de tipo de `c_id`. **Comprovado:** o cartão `"4"` é aprovado e gera matrícula paga.
+*Por que importa:* aceita dados inválidos e cria pagamentos "aprovados" falsos.
+
+**2.14 [LOW] Magic numbers e strings.** O prefixo `"4"` decide a aprovação (`46`). A senha padrão é `"123456"` (`68`). A porta `3000` está fixa (`src/utils.js:6`), assim como os valores `10000`, `2` e `10` do "hash" (`19-22`). Os status `'PAID'` e `'DENIED'` aparecem como literais espalhados.
+*Por que importa:* esconde regras de negócio e dificulta a configuração por ambiente.
+
+**2.15 [LOW] Nomenclatura e código morto.** As variáveis `u`, `e`, `p`, `cid` e `cc` não dizem nada (`src/AppManager.js:29-33`), assim como os campos de API `usr`, `eml`, `pwd` e `c_id`. Os nomes `badCrypto`, `AppManager` e `"Frankenstein LMS"` (`src/app.js:13`) também não ajudam. `dbUser`, `dbPass`, `smtpUser` e `totalRevenue` nunca são usados (`src/utils.js:2-5, 10`). Usa-se `let` onde caberia `const`.
+*Por que importa:* prejudica a leitura e esconde intenção.
+
+**2.16 [LOW] `console.log` como log.** Os logs não têm nível nem estrutura (`src/utils.js:13`, `src/app.js:13`, `src/AppManager.js:45`).
+*Por que importa:* não é possível filtrar por severidade nem mascarar campos sensíveis (ver 2.2).
