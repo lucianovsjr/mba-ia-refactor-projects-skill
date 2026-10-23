@@ -231,8 +231,13 @@ Lista sugerida (cobre os 3 projetos):
 | AP-16 | Nomenclatura ruim | LOW |
 | AP-17 | `print`/`console.log` como logging, código morto | LOW |
 
-- [ ] Sinais de detecção escritos de forma acionável (ex.: "f-string ou `+` contendo `SELECT|INSERT|UPDATE|DELETE` com variável de request")
-- [ ] Validar que cada achado das Tasks 2–4 é coberto por algum item do catálogo
+- [x] Sinais de detecção escritos de forma acionável (ex.: "f-string ou `+` contendo `SELECT|INSERT|UPDATE|DELETE` com variável de request")
+- [x] Validar que cada achado das Tasks 2–4 é coberto por algum item do catálogo
+
+**Resultado:** catálogo final com **22 anti-patterns** (CRITICAL 6 · HIGH 5 · MEDIUM 7 · LOW 4), cada um com sinais de detecção, grep, exemplo, impacto, recomendação e ID do playbook (PB-01…PB-18). A lista final reorganizou a sugerida acima: separou senha insegura (AP-04), exposição de dados sensíveis (AP-05) e falta de auth (AP-06); incluiu debug em produção (AP-07), CORS (AP-18) e código morto (AP-22).
+- AP-13 (deprecated) traz tabelas "obsoleto → moderno" para Python/Flask/SQLAlchemy e Node/Express, considerando a versão instalada.
+- Cobertura: os 48 achados manuais mapeiam para algum AP.
+- Os greps foram testados nos 3 projetos (aspas em `--include` por causa do zsh; regex de segredo cobre `config["KEY"] = "..."`; padrão extra para SQL concatenado em várias linhas). ✅
 
 ---
 
