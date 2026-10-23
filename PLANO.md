@@ -193,13 +193,15 @@ Estrutura proposta:
 
 ## Task 7 — Referência: Análise de projeto (`project-analysis.md`)
 
-- [ ] Heurísticas de **linguagem**: arquivos de manifesto (`requirements.txt`, `pyproject.toml`, `package.json`, `go.mod`, `pom.xml`, `Gemfile`, `composer.json`…) e extensões dominantes
-- [ ] Heurísticas de **framework**: imports/dependências (`flask`, `django`, `fastapi`, `express`, `nestjs`, `koa`, `spring`…) e como extrair versão
-- [ ] Heurísticas de **banco**: drivers/ORMs (`sqlite3`, `SQLAlchemy`, `pg`, `mongoose`, `prisma`…), arquivos `.db`, `CREATE TABLE`, models
-- [ ] **Domínio**: inferir por nomes de tabelas, entidades e rotas
-- [ ] **Mapeamento de arquitetura**: classificar em monolito de arquivo único / camadas parciais / MVC; entry point; como encontrar rotas em cada framework
-- [ ] Comandos de boot e porta padrão por stack (usados na Fase 3)
-- [ ] Formato exato do resumo da Fase 1
+- [x] Heurísticas de **linguagem**: arquivos de manifesto (`requirements.txt`, `pyproject.toml`, `package.json`, `go.mod`, `pom.xml`, `Gemfile`, `composer.json`…) e extensões dominantes
+- [x] Heurísticas de **framework**: imports/dependências (`flask`, `django`, `fastapi`, `express`, `nestjs`, `koa`, `spring`…) e como extrair versão
+- [x] Heurísticas de **banco**: drivers/ORMs (`sqlite3`, `SQLAlchemy`, `pg`, `mongoose`, `prisma`…), arquivos `.db`, `CREATE TABLE`, models
+- [x] **Domínio**: inferir por nomes de tabelas, entidades e rotas
+- [x] **Mapeamento de arquitetura**: classificar em monolito de arquivo único / camadas parciais / MVC; entry point; como encontrar rotas em cada framework
+- [x] Comandos de boot e porta padrão por stack (usados na Fase 3)
+- [x] Formato exato do resumo da Fase 1 — mantido no SKILL.md (fonte única), a referência traz as heurísticas para preenchê-lo
+
+**Extras incluídos:** checagem de *uso real* das camadas (projeto parcialmente organizado), versão **instalada** vs declarada (dependências transitivas sem pin), bloqueios de boot (porta 5000/AirPlay, banco com estado, `timeout` ausente no macOS) e como sondar endpoints para a baseline. ✅
 
 ---
 
