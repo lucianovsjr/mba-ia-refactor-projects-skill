@@ -275,21 +275,16 @@ Lista sugerida (cobre os 3 projetos):
 
 Requisito: **≥8 padrões** com **antes/depois em código**. Incluir exemplos em Python **e** JavaScript para reforçar a agnosticidade.
 
-- [ ] PB-01 Extrair config para variáveis de ambiente (AP-01)
-- [ ] PB-02 Query parametrizada (AP-02)
-- [ ] PB-03 Quebrar God Class em model + controller + route por domínio (AP-03)
-- [ ] PB-04 Hash de senha forte e serialização sem campos sensíveis (AP-04)
-- [ ] PB-05 Mover regra de negócio da rota para controller/service (AP-05)
-- [ ] PB-06 Substituir estado global por injeção de dependência / factory (AP-06, AP-07)
-- [ ] PB-07 Envolver operações em transação (AP-08)
-- [ ] PB-08 Eliminar N+1 com JOIN / eager loading / batch (AP-09)
-- [ ] PB-09 Validação de entrada na borda (AP-10)
-- [ ] PB-10 Error handler centralizado + exceções de domínio (AP-11)
-- [ ] PB-11 Substituir API deprecated pelo equivalente moderno (AP-13)
-- [ ] PB-12 Callbacks → async/await (AP-14)
-- [ ] PB-13 Constantes nomeadas no lugar de magic numbers (AP-15)
-- [ ] Ordem recomendada de aplicação (estrutura → segurança → camadas → qualidade) e passo de validação após cada grupo
-- [ ] Commit da skill: `feat: add refactor-arch skill`
+Lista final (alinhada aos IDs do catálogo da Task 8) — **18 padrões**, todos com antes/depois:
+
+- [x] PB-01 Config via env (AP-01, AP-07, AP-18) · PB-02 Queries parametrizadas (AP-02) · PB-03 Quebrar God Class (AP-03)
+- [x] PB-04 Hash de senha com KDF (AP-04) · PB-05 Serialização por lista branca + logs mascarados (AP-05) · PB-06 Endpoints perigosos e escalada de privilégio (AP-06)
+- [x] PB-07 Regra de negócio → controller (AP-08) · PB-08 App factory + DI (AP-09, AP-10) · PB-09 Transação e integridade (AP-11)
+- [x] PB-10 N+1 → JOIN/eager/GROUP BY (AP-12) · PB-11 APIs deprecated (AP-13) · PB-12 Error handler central (AP-14)
+- [x] PB-13 Validação na borda (AP-15) · PB-14 Duplicação → fonte única (AP-16) · PB-15 Callbacks → async/await (AP-17)
+- [x] PB-16 Constantes (AP-19) · PB-17 Renomear/código morto (AP-20, AP-22) · PB-18 Logger (AP-21)
+- [x] Ordem recomendada de aplicação e validação após cada grupo
+- [x] Snippets críticos executados: scrypt (Node) e werkzeug (Python), wrapper Promise do sqlite3 + transação com rollback, JOIN do N+1, decremento atômico de estoque ✅
 
 ---
 
