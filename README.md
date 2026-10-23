@@ -178,7 +178,7 @@ Os 22 itens saíram da análise manual (seção A). Todo achado dos 3 projetos s
 | A skill atualizou o `sqlite3` de 5 para 6 no P2, o que exige Node ≥ 20.17 | Regra nova no SKILL.md: atualizar para nova versão major só para corrigir um achado, conferindo o runtime e declarando o requisito no manifesto |
 | Express 4 não captura erros de handlers async | O playbook (PB-12) traz o `asyncHandler`, que a skill usou no P2 |
 
-> Os relatórios de `reports/` foram gerados com a versão da skill anterior aos ajustes da Task 15. Esses ajustes só previnem falsos positivos e deixam os comandos mais robustos, sem mudar o fluxo das fases.
+> Os relatórios `reports/audit-project-{1,2,3}.md` foram gerados com a versão da skill anterior aos ajustes da Task 15. Para comprovar os ajustes, **reexecutei as Fases 1–2 da versão final sobre o código original do P3** (git worktree no commit `12a317f`, respondendo `n` na confirmação): [`reports/audit-project-3-rerun.md`](reports/audit-project-3-rerun.md). Resultado: **18 achados, sem o falso positivo**. A skill testou o `DELETE /categories` com a app rodando e registrou que "não deixa órfãos (o SQLAlchemy fez `SET NULL`)". Os outros 18 achados válidos continuam lá, nenhum arquivo foi modificado, e o `datetime.utcnow()` deixou de ser contado como deprecated porque o Python instalado é o 3.11, enquanto a depreciação vale a partir do 3.12 (a regra de "versão instalada" do catálogo).
 
 ---
 
@@ -192,7 +192,7 @@ Os 22 itens saíram da análise manual (seção A). Todo achado dos 3 projetos s
 | [ecommerce-api-legacy](reports/audit-project-2.md) | 5 | 6 | 5 | 4 | **20** | 16 (todos cobertos + 1 novo) | API de callbacks do `sqlite3` + 7 dependências transitivas deprecated |
 | [task-manager-api](reports/audit-project-3.md) | 4 | 4¹ | 7 | 4 | **19** | 15 (todos cobertos) | `Query.get()` (16×, `LegacyAPIWarning`), Query API legada, `datetime.utcnow()` |
 
-¹ Inclui o F-07, falso positivo corrigido pela própria skill na Fase 3 (18 achados válidos).
+¹ Inclui o F-07, falso positivo corrigido pela própria skill na Fase 3 (18 achados válidos). A [reexecução com a versão final da skill](reports/audit-project-3-rerun.md) chegou a 4 · 3 · 7 · 4 = **18**, sem o falso positivo.
 
 **Achado que a skill encontrou e a análise manual não:** no P2, `POST /api/checkout` com `"card": 4111` (número em vez de string) lança `TypeError` dentro de um callback e **derruba o processo**, um DoS sem autenticação.
 
