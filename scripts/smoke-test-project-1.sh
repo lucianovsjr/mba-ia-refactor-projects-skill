@@ -36,7 +36,10 @@ check pedido_status400 PUT    /pedidos/1/status         400 '{"status":"invalido
 
 check relatorio_vendas GET    /relatorios/vendas        200
 
-check admin_query      POST   /admin/query              200 '{"sql":"SELECT COUNT(*) AS total FROM produtos"}'
-check admin_reset      POST   /admin/reset-db           200
+# Mudança de contrato aprovada (correção de segurança): na baseline original ambos respondiam 200.
+# Após a refatoração, /admin/query foi removido e /admin/reset-db fica desligado por padrão
+# (ENABLE_ADMIN_ENDPOINTS=false) — ambos respondem 404.
+check admin_query      POST   /admin/query              404 '{"sql":"SELECT COUNT(*) AS total FROM produtos"}'
+check admin_reset      POST   /admin/reset-db           404
 
 summary
