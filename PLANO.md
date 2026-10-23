@@ -74,8 +74,8 @@ Plano derivado do [DESAFIO.md](./DESAFIO.md). Cada task tem objetivo, subtarefas
 
 **Arquivos:** `app.py` (88), `controllers.py` (292), `models.py` (314), `database.py` (86).
 
-- [ ] Ler os 4 arquivos por completo
-- [ ] Procurar especificamente:
+- [x] Ler os 4 arquivos por completo
+- [x] Procurar especificamente:
   - Credenciais / `SECRET_KEY` hardcoded, `debug=True` em produção
   - SQL montado com concatenação/f-string (SQL Injection)
   - God Class/God File (`models.py` com SQL + regra de negócio + formatação de vários domínios)
@@ -87,9 +87,11 @@ Plano derivado do [DESAFIO.md](./DESAFIO.md). Cada task tem objetivo, subtarefas
   - Tratamento de erro espalhado / `except` genérico
   - Magic numbers, nomes ruins, código duplicado, `print` como log
   - APIs deprecated (ex.: padrões antigos do Flask/SQLite)
-- [ ] Para cada achado registrar: **severidade, arquivo:linha, descrição, impacto, justificativa**
+- [x] Para cada achado registrar: **severidade, arquivo:linha, descrição, impacto, justificativa**
 
-**Pronto quando:** ≥5 achados com pelo menos 1 CRITICAL/HIGH, 2 MEDIUM e 2 LOW.
+**Entregável:** seção "Projeto 1" em [`docs/manual-analysis.md`](docs/manual-analysis.md).
+**Resultado:** 17 achados (CRITICAL 5 · HIGH 4 · MEDIUM 5 · LOW 3). SQL Injection (bypass de login), senhas em texto puro e pedido com quantidade negativa comprovados contra a app rodando. Nenhuma API deprecated encontrada.
+**Pronto quando:** ≥5 achados com pelo menos 1 CRITICAL/HIGH, 2 MEDIUM e 2 LOW. ✅
 
 ---
 
