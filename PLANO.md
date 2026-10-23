@@ -123,8 +123,8 @@ Plano derivado do [DESAFIO.md](./DESAFIO.md). Cada task tem objetivo, subtarefas
 
 **Arquivos:** `app.py`, `database.py`, `seed.py`, `models/*`, `routes/*` (task 299, user 211, report 223), `services/notification_service.py`, `utils/helpers.py`.
 
-- [ ] Ler todos os arquivos
-- [ ] Procurar especificamente:
+- [x] Ler todos os arquivos
+- [x] Procurar especificamente:
   - Rotas "gordas": regra de negócio e queries direto nos blueprints (falta camada de controller)
   - Credenciais (SMTP, SECRET_KEY) hardcoded em `services/` ou `app.py`
   - Senha com hash fraco (ex.: MD5) ou exposta em `to_dict()`
@@ -134,9 +134,11 @@ Plano derivado do [DESAFIO.md](./DESAFIO.md). Cada task tem objetivo, subtarefas
   - APIs deprecated do SQLAlchemy/Flask (`Query.get()`, `datetime.utcnow()`, `before_first_request`, etc.)
   - Tratamento de erro não centralizado, `except:` genérico
   - Magic numbers (status, limites, prioridades)
-- [ ] Registrar no mesmo formato
+- [x] Registrar no mesmo formato
 
-**Pronto quando:** ≥5 achados na mesma distribuição mínima; destacar o que muda num projeto *já parcialmente em camadas*.
+**Entregável:** seção "Projeto 3" em [`docs/manual-analysis.md`](docs/manual-analysis.md).
+**Resultado:** 15 achados (CRITICAL 3 · HIGH 3 · MEDIUM 6 · LOW 3). Comprovados: hash MD5 exposto, criação de admin e escalada de privilégio anônimas, 500 em HTML por tipo inválido, `LegacyAPIWarning` do `Query.get()`. Diferencial do projeto parcialmente organizado: camadas `services/`, `utils/` e métodos de domínio existem mas não são usados — falta a camada de controllers.
+**Pronto quando:** ≥5 achados na mesma distribuição mínima; destacar o que muda num projeto *já parcialmente em camadas*. ✅
 
 ---
 

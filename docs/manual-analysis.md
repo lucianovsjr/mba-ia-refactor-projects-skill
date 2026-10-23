@@ -165,3 +165,84 @@ Achados identificados por leitura do código e por testes contra a aplicação r
 
 **2.16 [LOW] `console.log` como log.** Os logs não têm nível nem estrutura (`src/utils.js:13`, `src/app.js:13`, `src/AppManager.js:45`).
 *Por que importa:* não é possível filtrar por severidade nem mascarar campos sensíveis (ver 2.2).
+
+---
+
+## Projeto 3 — task-manager-api (Python/Flask, Task Manager)
+
+**Arquivos analisados:** `app.py` (34 linhas), `database.py` (3), `seed.py` (99), `models/` (3 arquivos, 122), `routes/` (3 arquivos, 733), `services/notification_service.py` (48), `utils/helpers.py` (116), ~1.150 linhas no total.
+**Stack:** Python 3.11, Flask 3.0.0, Flask-SQLAlchemy 3.1.1 (SQLAlchemy 2.1.6 resolvido transitivamente, sem pin), SQLite (`tasks.db`).
+**Arquitetura atual:** camadas **parciais**. Existem `models/` (ORM), `routes/` (blueprints), `services/` e `utils/`, mas não há camada de controller: as rotas concentram validação, regra de negócio, queries e serialização. `services/` e boa parte de `utils/` e dos métodos de domínio dos models **não são usados**. A configuração está fixa em `app.py`, sem app factory.
+
+**Resumo:** CRITICAL: 3 · HIGH: 3 · MEDIUM: 6 · LOW: 3 → **15 achados**
+
+| # | Severidade | Problema | Local |
+|---|---|---|---|
+| 3.1 | CRITICAL | Segredos hardcoded (SECRET_KEY, senha SMTP, URI do banco) | `app.py:11, 13`, `services/notification_service.py:7-10` |
+| 3.2 | CRITICAL | Senha com MD5 sem salt, e o hash é retornado pela API | `models/user.py:21, 29, 32`, `routes/user_routes.py:33, 85, 129, 209` |
+| 3.3 | CRITICAL | Sem autenticação nem autorização: token falso e escalada de privilégio via body | `routes/user_routes.py:52, 71-72, 119-125, 210`, `models/user.py:34-38` |
+| 3.4 | HIGH | Rotas "gordas": validação, regra de negócio, queries e serialização nos blueprints; sem controllers | `routes/task_routes.py:11-299`, `routes/user_routes.py:42-183`, `routes/report_routes.py:12-155` |
+| 3.5 | HIGH | App global sem factory: config fixa, `create_all()` no import, sem DI | `app.py:9-31`, `seed.py:2` |
+| 3.6 | HIGH | Debug ligado e servidor exposto em `0.0.0.0` | `app.py:34` |
+| 3.7 | MEDIUM | Queries N+1 nas listagens e relatórios | `routes/task_routes.py:41-57`, `routes/user_routes.py:22`, `routes/report_routes.py:15-28, 53-68, 159-164` |
+| 3.8 | MEDIUM | APIs deprecated: `Query.get()` (16×) e `datetime.utcnow()` (22×) | ver detalhamento |
+| 3.9 | MEDIUM | `except:` genérico (12×) e rotas sem tratamento que respondem 500 em HTML; sem handler central | `routes/*.py`, `utils/helpers.py:46, 49, 88` |
+| 3.10 | MEDIUM | Lógica duplicada e divergente (overdue, validações, serialização) | `routes/task_routes.py:17-39, 71-80, 96-114 vs 166-184, 283-287`, `routes/user_routes.py:61 vs 106, 171-180`, `routes/report_routes.py:33-36, 132-135` |
+| 3.11 | MEDIUM | Validação de entrada ausente ou fraca | `routes/report_routes.py:180, 196-202`, `routes/user_routes.py:64, 102-103, 115`, `routes/task_routes.py:113, 182` |
+| 3.12 | MEDIUM | CORS liberado para qualquer origem | `app.py:15` |
+| 3.13 | LOW | Código morto e imports não usados | `app.py:7`, `routes/task_routes.py:7`, `routes/user_routes.py:6`, `routes/report_routes.py:7-8`, `models/task.py:3, 38-60`, `models/user.py:34-38`, `utils/helpers.py:3-7, 9-116`, `services/notification_service.py:1-48` |
+| 3.14 | LOW | Magic numbers e strings, apesar de existirem constantes em `utils/helpers.py:110-116` | `routes/task_routes.py:96-114, 177-182`, `routes/report_routes.py:24-28, 45, 129`, `routes/user_routes.py:64, 71, 115, 120` |
+| 3.15 | LOW | `print` usado como log | `routes/task_routes.py:149, 153, 219, 234`, `routes/user_routes.py:83, 89, 147`, `services/notification_service.py:21, 24`, `utils/helpers.py:39, 41` |
+
+### Detalhamento e justificativas
+
+**3.1 [CRITICAL] Segredos hardcoded.** `SECRET_KEY = 'super-secret-key-123'` (`app.py:13`). Senha SMTP `'senha123'`, usuário e host fixos em `NotificationService.__init__` (`services/notification_service.py:7-10`). URI do banco fixa (`app.py:11`).
+*Por que importa:* os segredos ficam versionados, não é possível ter configuração por ambiente e a conta de email fica comprometida.
+
+**3.2 [CRITICAL] MD5 sem salt e hash exposto.** `set_password` e `check_password` usam `hashlib.md5` (`models/user.py:29, 32`). `User.to_dict()` inclui `password` (`models/user.py:21`), e esse dicionário é devolvido por `GET /users/<id>`, `POST /users`, `PUT /users/<id>` e `POST /login` (`routes/user_routes.py:33, 85, 129, 209`). **Comprovado:** a resposta traz `"password": "81dc9bdb52d04dc20036dbd8313ed055"`, que é exatamente `md5("1234")` e se reverte instantaneamente com rainbow tables.
+*Por que importa:* qualquer cliente da API obtém as senhas de todos os usuários na prática.
+
+**3.3 [CRITICAL] Sem autenticação nem autorização.** O login devolve `'fake-jwt-token-' + str(user.id)` (`routes/user_routes.py:210`), e nenhuma rota exige token. `role` é aceito direto do body na criação (`52, 71-72`) e na edição (`119-122`), assim como `active` (`124-125`). `User.is_admin()` existe mas nunca é chamado (`models/user.py:34-38`). **Comprovado:** um cliente anônimo cria o usuário `evil@x.com` com `role: admin` (201) e promove a Maria para `admin` com `PUT /users/2`.
+*Por que importa:* qualquer pessoa pode virar administrador, alterar ou apagar qualquer dado e desativar contas.
+
+**3.4 [HIGH] Rotas "gordas" e camadas que não são usadas.** Os blueprints validam campos, consultam o ORM, aplicam regras (overdue, cascata de exclusão em `user_routes.py:140-142`, cálculo de taxas) e montam o JSON manualmente, por exemplo em `task_routes.py:85-154` e `report_routes.py:12-101`. Já existem pastas `services/` e `utils/`, e os models têm `validate_status`, `validate_priority` e `is_overdue`, mas **nada disso é usado** pelas rotas.
+*Por que importa:* a organização em pastas é só aparente. As regras não são testáveis sem HTTP e as camadas existentes ficam abandonadas. É o caso típico de um projeto que precisa de uma camada de controllers, não de reescrita.
+
+**3.5 [HIGH] App global, sem factory.** `app = Flask(__name__)` está no nível do módulo, com configuração fixa (`app.py:9-13`), e `db.create_all()` roda **no import** (`app.py:30-31`). O `seed.py` importa a app global (`seed.py:2`).
+*Por que importa:* não é possível criar instâncias com outra configuração (testes, outro banco), e importar o módulo já tem efeito colateral no banco.
+
+**3.6 [HIGH] Debug em produção.** `app.run(debug=True, host='0.0.0.0')` (`app.py:34`).
+*Por que importa:* o debugger do Werkzeug exposto na rede permite execução remota de código.
+
+**3.7 [MEDIUM] N+1.** Em `GET /tasks`, cada task gera `User.query.get` e `Category.query.get` (`task_routes.py:41-57`), ou seja, 1 + 2N queries. Em `GET /users`, `len(u.tasks)` dispara um lazy load por usuário (`user_routes.py:22`). `GET /reports/summary` faz 12 `COUNT`s separados (`report_routes.py:15-28`), carrega todas as tasks (`30`) e mais 1 query por usuário (`53-68`). `GET /categories` faz 1 `COUNT` por categoria (`159-164`).
+*Por que importa:* a latência cresce de forma linear com o volume. Um `joinedload` ou `GROUP BY` resolveria cada caso com 1 ou 2 queries.
+
+**3.8 [MEDIUM] APIs deprecated.**
+- `Model.query.get(id)` aparece 16 vezes (`user_routes.py:29, 94, 136, 155`; `report_routes.py:105, 192, 213`; `task_routes.py:42, 51, 67, 117, 122, 158, 188, 195, 227`). **Comprovado:** em runtime o SQLAlchemy 2.1 emite `LegacyAPIWarning: The Query.get() method is considered legacy ... now available as Session.get()`. *Moderno:* `db.session.get(Model, id)`, ou `db.get_or_404(Model, id)`.
+- `datetime.utcnow()` aparece 22 vezes (models, rotas, `seed.py`, `helpers.py`). É deprecated desde o Python 3.12 e retorna datetime *naive*. *Moderno:* `datetime.now(timezone.utc)`.
+- O `Model.query` em si é a API legada do Flask-SQLAlchemy. *Moderno:* `db.session.execute(db.select(Model)...)`.
+- O `requirements.txt` não fixa a versão do SQLAlchemy, e o pip resolveu a 2.1.6, que é justamente a versão que emite os warnings.
+*Por que importa:* gera ruído de warnings e quebra em upgrades futuros, além do risco com datas sem fuso horário.
+
+**3.9 [MEDIUM] Error handling.** Há 12 `except:` genéricos que engolem até `KeyboardInterrupt`/`SystemExit` (`task_routes.py:62, 137, 204, 236`; `user_routes.py:130, 149`; `report_routes.py:186, 207, 221`; `helpers.py:46, 49, 88`). Muitas rotas não têm nenhum tratamento. **Comprovado:** `POST /tasks` com `"priority": "alta"` provoca `TypeError` em `task_routes.py:113` e retorna **500 em HTML**. `PUT /categories/1` com body `null` faz o mesmo (`report_routes.py:197`). Não existe `@app.errorhandler`.
+*Por que importa:* o cliente recebe HTML no lugar de JSON e erros de validação viram 500.
+
+**3.10 [MEDIUM] Duplicação divergente.** A regra de "overdue" foi copiada 6 vezes (`task_routes.py:30-39, 71-80, 283-287`; `user_routes.py:171-180`; `report_routes.py:33-36, 132-135`), embora `Task.is_overdue()` exista (`models/task.py:50-60`). A validação de task está repetida entre o create e o update (`task_routes.py:96-114` vs `166-184`) e reimplementada em `helpers.process_task_data` (não usada) e em `Task.validate_*` (não usados). A lista de status aparece em 5 lugares. A serialização manual de task em `task_routes.py:17-28` e `user_routes.py:162-169` duplica `Task.to_dict()`. A regex de email está duplicada (`user_routes.py:61, 106`, `helpers.py:21`).
+*Por que importa:* as cópias já divergem. Por exemplo, `process_task_data` faz `strip()` e aceita a data em `dd/mm/YYYY`, e as rotas não.
+
+**3.11 [MEDIUM] Validação ausente ou fraca.** `POST /categories` não valida `color` (`report_routes.py:180`), apesar de `is_valid_color` existir. `PUT /categories` não checa body vazio (`196-202`). `PUT /users` aceita `name` vazio (`user_routes.py:102-103`). A senha mínima tem só 4 caracteres (`64, 115`). Não há checagem de tipo em `priority` (`task_routes.py:113, 182`).
+*Por que importa:* dados inválidos chegam ao banco ou viram erro 500.
+
+**3.12 [MEDIUM] CORS aberto.** `CORS(app)` sem restrição de origem (`app.py:15`).
+*Por que importa:* combinado com 3.3, qualquer site pode operar a API em nome do navegador do usuário.
+
+**3.13 [LOW] Código morto e imports não usados.** Imports sem uso: `os, sys, json` (`app.py:7`), `json, os, sys, time` (`task_routes.py:7`), `hashlib, json` (`user_routes.py:6`), `format_date, calculate_percentage, json` (`report_routes.py:7-8`), `json` (`models/task.py:3`), `os, json, sys, math, hashlib` (`helpers.py:3-7`). Também nunca são usados: `NotificationService` (o arquivo inteiro), as funções de `helpers.py` (`sanitize_string`, `generate_id`, `log_action`, `parse_date`, `is_valid_color`, `validate_email`, `process_task_data`), as constantes `VALID_STATUSES`/`VALID_ROLES`/etc. (`110-116`), `Task.validate_*`, `Task.is_overdue` e `User.is_admin`.
+*Por que importa:* dá a falsa impressão de que existem regras centralizadas e confunde quem for manter.
+
+**3.14 [LOW] Magic numbers e strings.** Os limites de prioridade `1` e `5` (`task_routes.py:113, 182`), o mapeamento `1→critical … 5→minimal` (`report_routes.py:24-28, 84-88`), `priority <= 2` como "alta prioridade" (`129`), a janela de `7` dias (`45`), a senha mínima `4` (`user_routes.py:64, 115`), os tamanhos de título `3`/`200` e as listas de status e roles aparecem como literais, embora as constantes equivalentes estejam definidas em `helpers.py:110-116`.
+*Por que importa:* uma mudança de regra exige caçar literais em vários arquivos.
+
+**3.15 [LOW] `print` como log.** São 11 chamadas, sem nível nem formato (ver tabela).
+*Por que importa:* não há observabilidade nem controle por ambiente.
+
+> **Observação:** a exclusão de categoria **não** deixa órfãos. O relacionamento do SQLAlchemy anula o `category_id` das tasks (verificado: depois de `DELETE /categories/1`, a task 1 fica com `category_id: null`). Por isso não foi registrado como achado.
