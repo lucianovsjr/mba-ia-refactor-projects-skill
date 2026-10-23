@@ -144,12 +144,13 @@ Plano derivado do [DESAFIO.md](./DESAFIO.md). Cada task tem objetivo, subtarefas
 
 ## Task 5 — README: seção "Análise Manual"
 
-- [ ] Reescrever `README.md` mantendo o link para `DESAFIO.md`
-- [ ] Criar seção **A) Análise Manual** com uma tabela por projeto: `Severidade | Problema | Arquivo:linha | Justificativa`
-- [ ] Ordenar por severidade (CRITICAL → LOW)
-- [ ] Commit: `docs: add manual analysis of the 3 projects`
+- [x] Reescrever `README.md` mantendo o link para `DESAFIO.md`
+- [x] Criar seção **A) Análise Manual** com uma tabela por projeto: `Severidade | Problema | Arquivo:linha | Justificativa`
+- [x] Ordenar por severidade (CRITICAL → LOW)
+- [x] Commit: `docs: add manual analysis section to README`
 
-**Pronto quando:** 3 tabelas, cada uma cumprindo a distribuição mínima.
+**Resultado:** README com visão geral (48 achados no total), 3 tabelas, lições para a skill e placeholders das seções B, C e D.
+**Pronto quando:** 3 tabelas, cada uma cumprindo a distribuição mínima. ✅
 
 ---
 
