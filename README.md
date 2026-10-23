@@ -4,7 +4,7 @@ Skill `refactor-arch` para Claude Code que analisa, audita e refatora projetos l
 
 ## Desafio
 
-A descrição completa do desafio está em [DESAFIO.md](./DESAFIO.md). O plano de execução está em [PLANO.md](./PLANO.md).
+A descrição completa do desafio está em [DESAFIO.md](./DESAFIO.md).
 
 ## Sumário
 
