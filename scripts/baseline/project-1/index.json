@@ -1,0 +1,1 @@
+{"endpoints":{"health":"/health","login":"/login","pedidos":"/pedidos","produtos":"/produtos","relatorios":"/relatorios/vendas","usuarios":"/usuarios"},"mensagem":"Bem-vindo \u00e0 API da Loja","versao":"1.0.0"}

@@ -58,14 +58,15 @@ Plano derivado do [DESAFIO.md](./DESAFIO.md). Cada task tem objetivo, subtarefas
 
 **Objetivo:** registrar o comportamento *antes* da refatoração para poder provar que nada quebrou depois.
 
-- [ ] `code-smells-project`: subir com `python app.py`, listar todas as rotas (`@app.route`) com método e path
-- [ ] `ecommerce-api-legacy`: subir com `npm start`, listar rotas (`app.get/post/...`) e usar o `api.http` como roteiro
-- [ ] `task-manager-api`: rodar `python seed.py` e `python app.py`, listar rotas de todos os blueprints
-- [ ] Para cada projeto, salvar exemplos de request/response (status code + formato do JSON) de cada endpoint
-- [ ] (Opcional, recomendado) criar um script de smoke test por projeto (`curl` ou Python) fora da skill, em `scripts/` ou no scratch, para reutilizar na validação
+- [x] `code-smells-project`: listar todas as rotas com método e path — 19 rotas
+- [x] `ecommerce-api-legacy`: listar rotas e usar o `api.http` como roteiro — 3 rotas
+- [x] `task-manager-api`: listar rotas de todos os blueprints — 20 rotas
+- [x] Para cada projeto, salvar exemplos de request/response (status code + formato do JSON) de cada endpoint
+- [x] Criar um script de smoke test por projeto em `scripts/` para reutilizar na validação
 
-**Entregável:** inventário de endpoints por projeto (será usado na Task 16 e na validação da Fase 3).
-**Pronto quando:** cada endpoint tem pelo menos uma chamada documentada com resposta esperada.
+**Entregável:** inventário em [`docs/baseline-endpoints.md`](docs/baseline-endpoints.md), scripts `scripts/smoke-test-project-{1,2,3}.sh` (+ `scripts/lib.sh`) e respostas originais em `scripts/baseline/project-{1,2,3}/`.
+**Resultado:** P1 25/25 · P2 7/7 · P3 26/26 checks passando no código original.
+**Pronto quando:** cada endpoint tem pelo menos uma chamada documentada com resposta esperada. ✅
 
 ---
 

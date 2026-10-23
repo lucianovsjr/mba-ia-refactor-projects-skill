@@ -1,0 +1,1 @@
+{"message":"Login realizado com sucesso","token":"fake-jwt-token-1","user":{"active":true,"created_at":"2026-10-23 20:31:10.037613","email":"joao@email.com","id":1,"name":"Jo\u00e3o Silva","password":"81dc9bdb52d04dc20036dbd8313ed055","role":"admin"}}

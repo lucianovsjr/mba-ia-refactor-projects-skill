@@ -1,0 +1,1 @@
+{"ambiente":"producao","counts":{"pedidos":0,"produtos":10,"usuarios":3},"database":"connected","db_path":"loja.db","debug":true,"secret_key":"minha-chave-super-secreta-123","status":"ok","versao":"1.0.0"}
