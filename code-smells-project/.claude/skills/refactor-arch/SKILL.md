@@ -27,7 +27,7 @@ O conhecimento de domínio está em `references/`. Leia cada arquivo **na fase e
 - **Nenhuma modificação antes da confirmação.** As Fases 1 e 2 são somente leitura. Você pode rodar comandos de leitura (listar e ler arquivos, `git status`, consultar versões de dependências) e pode subir a aplicação *original* para testá-la, desde que a derrube depois e restaure o banco/estado local que seus testes alterarem. O único arquivo que pode ser escrito antes da confirmação é o relatório de auditoria, e só no passo que diz isso.
 - **Evidência, não suposição.** Todo achado precisa apontar para um `arquivo:linha` real que você leu nesta execução. Nunca invente achados nem números de linha. Se um item do catálogo não se aplica, deixe-o de fora.
 - **Raciocínio agnóstico de stack.** Decida pelo que o código mostra (manifestos, imports, entry points), nunca pelo nome da pasta do projeto. O mesmo catálogo vale para qualquer linguagem; traduza os sinais de detecção para os idiomas da stack detectada.
-- **Preserve o contrato público.** Os mesmos métodos HTTP, paths, status codes e formatos de resposta precisam continuar funcionando depois da refatoração. A única mudança de contrato permitida é **remover dados sensíveis** das respostas (senhas, hashes, segredos, caminhos internos). Liste explicitamente cada mudança desse tipo no resumo da Fase 3.
+- **Preserve o contrato público.** Os mesmos métodos HTTP, paths, status codes e formatos de resposta precisam continuar funcionando depois da refatoração. As únicas mudanças de contrato permitidas são **correções de segurança e de integridade**: remover dados sensíveis das respostas, desabilitar endpoints que executam SQL/código arbitrário, bloquear escalada de privilégio e rejeitar entradas que corrompem dados (veja a lista em `references/mvc-guidelines.md` §5). Não torne obrigatória a autenticação de rotas que hoje são públicas; registre isso como recomendação. Liste explicitamente cada mudança de contrato no resumo da Fase 3.
 - **Adapte-se ao ponto de partida.** Um monolito de arquivo único é reestruturado por completo. Um projeto parcialmente em camadas tem suas camadas existentes **reaproveitadas e completadas**: adicione a camada que falta, mova a lógica para onde ela pertence, passe a usar os módulos ignorados ou remova-os. Não reescreva código que já está no lugar certo.
 - **Mantenha o usuário informado** com os banners exatos abaixo, para que cada fase seja fácil de achar no terminal.
 
@@ -123,14 +123,14 @@ Aplique os padrões do playbook nesta ordem, para que cada passo deixe a aplica�
 
 Regras durante a transformação:
 - Apague os arquivos antigos assim que o conteúdo deles tiver sido movido. Não deixe duplicatas mortas para trás.
-- Mantenha os paths, métodos e formatos de resposta das rotas **idênticos**; a única exceção é a remoção de dados sensíveis (veja as regras gerais).
+- Mantenha os paths, métodos e formatos de resposta das rotas **idênticos**; as únicas exceções são as correções de segurança e integridade das regras gerais.
 - Se você introduzir uma nova dependência, ela precisa ser amplamente adotada, precisa ser adicionada ao manifesto e precisa ser instalada. Prefira a biblioteca padrão quando ela bastar (por exemplo `hashlib.pbkdf2_hmac` / `werkzeug.security`, ou `crypto.scrypt`).
 - Mantenha os dados e scripts de seed funcionando, e mantenha funcionando os comandos de boot existentes (crie um novo só se o antigo não puder funcionar, e documente-o).
 
 ### 3.3 Validação (obrigatória: não pule e não declare sucesso sem evidência)
 
 1. Instale as dependências, se mudaram. **Suba** a aplicação refatorada em background, espere até ela ficar pronta e confirme que não há erros no log de inicialização.
-2. Rode **as mesmas requisições da baseline** e compare os status codes e o formato das respostas. Toda diferença precisa ser corrigida ou justificada como remoção de dado sensível.
+2. Rode **as mesmas requisições da baseline** e compare os status codes e o formato das respostas. Toda diferença precisa ser corrigida ou justificada como uma das mudanças de contrato permitidas.
 3. **Re-audite** o código refatorado contra o catálogo. Corrija qualquer achado CRITICAL/HIGH restante. Liste os achados MEDIUM/LOW que sobrarem, com o motivo de terem sido mantidos.
 4. Derrube a aplicação e restaure o banco/estado.
 5. Se algo falhar, corrija e rode a validação de novo. Repita até passar, ou até encontrar um bloqueio que você não consiga resolver. Nesse caso, reporte o bloqueio com honestidade: nunca imprima ✓ para uma verificação que falhou.
@@ -150,7 +150,7 @@ PHASE 3: REFACTORING COMPLETE
 <ID do achado → o que foi feito, uma linha por achado>
 
 ## Contract changes
-<campos sensíveis removidos das respostas, ou "nenhuma">
+<correções de segurança/integridade que alteraram respostas (campo removido, endpoint desabilitado, novo 400/404), ou "nenhuma">
 
 ## Validation
   ✓|✗ Application boots without errors (<comando de start>)

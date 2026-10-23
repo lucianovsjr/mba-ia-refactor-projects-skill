@@ -163,7 +163,7 @@ grep -rnE "(print|console\.log|logger\.\w+)\(.*(card|cartao|cc|cvv|senha|passwor
 ```
 
 **Impacto:** hashes e segredos ficam acessíveis a qualquer cliente da API, e dados de cartão nos logs violam o PCI-DSS.
-**Recomendação:** use serialização por **lista branca** de campos, mascare dados sensíveis nos logs e retire segredos e configuração dos endpoints públicos. *Essa é a única mudança de contrato permitida: liste-a no resumo da Fase 3.*
+**Recomendação:** use serialização por **lista branca** de campos, mascare dados sensíveis nos logs e retire segredos e configuração dos endpoints públicos. *É uma mudança de contrato permitida (veja `mvc-guidelines.md` §5); liste-a no resumo da Fase 3.*
 
 ---
 

@@ -255,17 +255,19 @@ Lista sugerida (cobre os 3 projetos):
 
 ## Task 10 — Referência: Guidelines MVC (`mvc-guidelines.md`)
 
-- [ ] Responsabilidades de cada camada:
+- [x] Responsabilidades de cada camada:
   - **Models:** acesso a dados e entidades, sem HTTP
   - **Views/Routes:** mapeamento HTTP → controller, serialização de resposta, sem regra de negócio
   - **Controllers:** orquestram o fluxo/regras de negócio, recebem dependências injetadas
   - **Config:** settings via variáveis de ambiente (com defaults seguros para dev)
   - **Middlewares:** error handler centralizado, validação, CORS
   - **Composition root / entry point:** cria app, injeta dependências, registra rotas
-- [ ] Regras de dependência (Routes → Controllers → Models; nunca o inverso)
-- [ ] Estrutura alvo por stack: Python/Flask (`src/config`, `src/models`, `src/views` ou `routes`, `src/controllers`, `src/middlewares`, `app.py`) e Node/Express (equivalente em `src/`)
-- [ ] Como adaptar projeto já parcialmente organizado (renomear/mover em vez de reescrever; `services/` existente pode virar controllers ou ser mantido como camada de serviço chamada pelo controller)
-- [ ] Regra de ouro: **contratos dos endpoints não mudam**
+- [x] Regras de dependência (Routes → Controllers → Models; nunca o inverso)
+- [x] Estrutura alvo por stack: Python/Flask (`src/config`, `src/models`, `src/views` ou `routes`, `src/controllers`, `src/middlewares`, `app.py`) e Node/Express (equivalente em `src/`)
+- [x] Como adaptar projeto já parcialmente organizado (renomear/mover em vez de reescrever; `services/` existente pode virar controllers ou ser mantido como camada de serviço chamada pelo controller)
+- [x] Regra de ouro: **contratos dos endpoints não mudam**
+
+**Decisão tomada:** exceções de contrato ampliadas de "remover dados sensíveis" para **correções de segurança/integridade** (§5 da referência): desabilitar `/admin/query` e `/admin/reset-db` por padrão, bloquear `role` vindo do body, rejeitar quantidade negativa, 404 em DELETE inexistente. Exigir login nas rotas públicas fica **fora do escopo** (quebraria clientes) e vira recomendação. SKILL.md, catálogo e `docs/baseline-endpoints.md` atualizados para refletir isso. ✅
 
 ---
 
