@@ -1,0 +1,44 @@
+$ .venv/bin/python seed.py
+Seed concluído com sucesso!
+  3 usuários
+  4 categorias
+  10 tasks
+
+$ PORT=5002 .venv/bin/python app.py
+ * Serving Flask app 'app'
+ * Debug mode: off
+2026-10-23 19:37:31,411 INFO werkzeug: WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5002
+2026-10-23 19:37:31,411 INFO werkzeug: Press CTRL+C to quit
+2026-10-23 19:37:31,734 INFO werkzeug: 127.0.0.1 - - [23/Oct/2026 19:37:31] "GET / HTTP/1.1" 200 -
+
+$ BASE_URL=http://localhost:5002 ./scripts/smoke-test-project-3.sh
+task-manager-api @ http://localhost:5002
+  ✓ GET    /tasks                                   200
+  ✓ GET    /tasks/search?q=login&status=in_progress 200
+  ✓ GET    /tasks/stats                             200
+  ✓ GET    /tasks/1                                 200
+  ✓ GET    /tasks/9999                              404
+  ✓ POST   /tasks                                   201
+  ✓ POST   /tasks                                   400
+  ✓ PUT    /tasks/2                                 200
+  ✓ DELETE /tasks/3                                 200
+  ✓ GET    /users                                   200
+  ✓ GET    /users/1                                 200
+  ✓ GET    /users/9999                              404
+  ✓ POST   /users                                   201
+  ✓ POST   /users                                   409
+  ✓ PUT    /users/2                                 200
+  ✓ GET    /users/1/tasks                           200
+  ✓ POST   /login                                   200
+  ✓ POST   /login                                   401
+  ✓ GET    /reports/summary                         200
+  ✓ GET    /reports/user/1                          200
+  ✓ GET    /reports/user/9999                       404
+  ✓ GET    /categories                              200
+  ✓ POST   /categories                              201
+  ✓ PUT    /categories/1                            200
+  ✓ DELETE /categories/5                            200
+  ✓ DELETE /users/3                                 200
+--------------------------------
+  26 passed | 0 failed

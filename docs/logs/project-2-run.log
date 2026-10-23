@@ -1,0 +1,18 @@
+$ npm start
+
+> desafio-arquitetura-ia-boilerplate@1.0.0 start
+> node src/app.js
+
+[INFO] LMS API rodando na porta 3000
+
+$ BASE_URL=http://localhost:3000 ./scripts/smoke-test-project-2.sh
+ecommerce-api-legacy @ http://localhost:3000
+  ✓ POST   /api/checkout                            200
+  ✓ POST   /api/checkout                            200
+  ✓ POST   /api/checkout                            400
+  ✓ POST   /api/checkout                            400
+  ✓ POST   /api/checkout                            404
+  ✓ GET    /api/admin/financial-report              200
+  ✓ DELETE /api/users/1                             200
+--------------------------------
+  7 passed | 0 failed

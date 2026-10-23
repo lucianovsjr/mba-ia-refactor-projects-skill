@@ -1,0 +1,38 @@
+$ PORT=5001 .venv/bin/python app.py
+2026-10-23 19:37:25,880 INFO src.database.schema: Banco populado com dados de exemplo
+ * Serving Flask app 'src.app'
+ * Debug mode: off
+2026-10-23 19:37:25,890 INFO werkzeug: WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5001
+2026-10-23 19:37:25,890 INFO werkzeug: Press CTRL+C to quit
+2026-10-23 19:37:26,054 INFO werkzeug: 127.0.0.1 - - [23/Oct/2026 19:37:26] "GET / HTTP/1.1" 200 -
+
+$ BASE_URL=http://localhost:5001 ./scripts/smoke-test-project-1.sh
+code-smells-project @ http://localhost:5001
+  ✓ GET    /                                        200
+  ✓ GET    /health                                  200
+  ✓ GET    /produtos                                200
+  ✓ GET    /produtos/busca?q=mouse&categoria=informatica&preco_min=10&preco_max=500 200
+  ✓ GET    /produtos/1                              200
+  ✓ GET    /produtos/9999                           404
+  ✓ POST   /produtos                                201
+  ✓ POST   /produtos                                400
+  ✓ PUT    /produtos/2                              200
+  ✓ DELETE /produtos/10                             200
+  ✓ GET    /usuarios                                200
+  ✓ GET    /usuarios/1                              200
+  ✓ GET    /usuarios/9999                           404
+  ✓ POST   /usuarios                                201
+  ✓ POST   /login                                   200
+  ✓ POST   /login                                   401
+  ✓ POST   /pedidos                                 201
+  ✓ POST   /pedidos                                 400
+  ✓ GET    /pedidos                                 200
+  ✓ GET    /pedidos/usuario/2                       200
+  ✓ PUT    /pedidos/1/status                        200
+  ✓ PUT    /pedidos/1/status                        400
+  ✓ GET    /relatorios/vendas                       200
+  ✓ POST   /admin/query                             404
+  ✓ POST   /admin/reset-db                          404
+--------------------------------
+  25 passed | 0 failed

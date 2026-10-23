@@ -458,14 +458,14 @@ Lista final (alinhada aos IDs do catálogo da Task 8) — **18 padrões**, todos
 
 ## Task 16 — README: Construção da Skill, Resultados e Como Executar
 
-- [ ] **B) Construção da Skill:** estrutura do SKILL.md e referências; anti-patterns escolhidos e por quê; estratégia de agnosticidade; desafios encontrados e soluções
-- [ ] **C) Resultados:**
+- [x] **B) Construção da Skill:** estrutura do SKILL.md e referências; anti-patterns escolhidos e por quê; estratégia de agnosticidade; desafios encontrados e soluções
+- [x] **C) Resultados:**
   - Tabela de findings por severidade dos 3 relatórios
   - Árvore antes/depois de cada projeto
   - Checklist de validação preenchido para cada projeto
-  - Logs/screenshots das apps rodando após refatoração (salvar imagens em `docs/` ou similar)
+  - Logs das apps rodando após refatoração → `docs/logs/project-{1,2,3}-run.log` (boot + smoke test: 25/25, 7/7, 26/26)
   - Observações sobre o comportamento em stacks diferentes
-- [ ] **D) Como Executar:** pré-requisitos (Claude Code instalado/autenticado, Python 3.x, Node.js), comandos da skill em cada projeto, como validar (boot + chamadas aos endpoints)
+- [x] **D) Como Executar:** pré-requisitos (Claude Code instalado/autenticado, Python 3.x, Node.js), comandos da skill em cada projeto, como validar (boot + chamadas aos endpoints)
 - [ ] Commit: `docs: complete README with skill design, results and usage`
 
 ---
