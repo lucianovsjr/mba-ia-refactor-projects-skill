@@ -1,7 +1,7 @@
 ---
 name: refactor-arch
 description: Audita uma codebase de backend e a refatora para o padrão MVC. Detecta linguagem, framework e arquitetura atual, identifica anti-patterns (segurança, violações de MVC/SOLID, APIs deprecated, performance, qualidade de código) com arquivo:linha exatos e severidade, imprime um relatório de auditoria padronizado, pede confirmação e então reestrutura o projeto em Models / Views (Routes) / Controllers, validando que a aplicação continua subindo e que todos os endpoints originais respondem. Agnóstica de stack (Python/Flask, Node/Express e outras). Use quando o usuário pedir para auditar, revisar a arquitetura ou refatorar um projeto legado para MVC.
-argument-hint: "[caminho-do-relatório]"
+argument-hint: "[--fase3] [caminho-do-relatório]"
 ---
 
 # refactor-arch
@@ -11,6 +11,8 @@ Você é um arquiteto de software sênior e vai executar uma refatoração arqui
 1. **Fase 1, Análise:** entender o projeto e imprimir um resumo.
 2. **Fase 2, Auditoria:** encontrar anti-patterns, imprimir o relatório, salvá-lo e **parar para pedir confirmação**.
 3. **Fase 3, Refatoração:** reestruturar para MVC e **provar** que a aplicação continua funcionando.
+
+Com `--fase3` em `$ARGUMENTS`, a skill entra direto na Fase 3 a partir de um relatório de auditoria já salvo (veja "Entrada direta na Fase 3"). Sem a flag, as três fases rodam em sequência.
 
 O conhecimento de domínio está em `references/`. Leia cada arquivo **na fase em que ele é indicado**, e não de memória:
 
@@ -27,9 +29,23 @@ O conhecimento de domínio está em `references/`. Leia cada arquivo **na fase e
 - **Nenhuma modificação antes da confirmação.** As Fases 1 e 2 são somente leitura. Você pode rodar comandos de leitura (listar e ler arquivos, `git status`, consultar versões de dependências) e pode subir a aplicação *original* para testá-la, desde que a derrube depois e restaure o banco/estado local que seus testes alterarem. O único arquivo que pode ser escrito antes da confirmação é o relatório de auditoria, e só no passo que diz isso.
 - **Evidência, não suposição.** Todo achado precisa apontar para um `arquivo:linha` real que você leu nesta execução. Nunca invente achados nem números de linha. Se um item do catálogo não se aplica, deixe-o de fora.
 - **Raciocínio agnóstico de stack.** Decida pelo que o código mostra (manifestos, imports, entry points), nunca pelo nome da pasta do projeto. O mesmo catálogo vale para qualquer linguagem; traduza os sinais de detecção para os idiomas da stack detectada.
-- **Preserve o contrato público.** Os mesmos métodos HTTP, paths, status codes e formatos de resposta precisam continuar funcionando depois da refatoração. As únicas mudanças de contrato permitidas são **correções de segurança e de integridade**: remover dados sensíveis das respostas, desabilitar endpoints que executam SQL/código arbitrário, bloquear escalada de privilégio e rejeitar entradas que corrompem dados (veja a lista em `references/mvc-guidelines.md` §5). Não torne obrigatória a autenticação de rotas que hoje são públicas; registre isso como recomendação. Liste explicitamente cada mudança de contrato no resumo da Fase 3.
+- **Preserve o contrato público.** Os mesmos métodos HTTP, paths, status codes e formatos de resposta precisam continuar funcionando depois da refatoração. As únicas mudanças de contrato permitidas são **correções de segurança e de integridade**: remover dados sensíveis das respostas, desabilitar endpoints que executam SQL/código arbitrário, bloquear escalada de privilégio e rejeitar entradas que corrompem dados (veja a lista em `references/mvc-guidelines.md` §5). Trocar um token previsível por um token assinado **não** é mudança de contrato (o token é opaco para o cliente) e é obrigatório quando o relatório recomendar. Não torne obrigatória a autenticação de rotas que hoje são públicas; registre isso como recomendação. Liste explicitamente cada mudança de contrato no resumo da Fase 3.
+- **Recomendação se aplica por inteiro.** Cada ação da `Recommendation` de um achado é aplicada na Fase 3. A única ação que pode ficar como recomendação remanescente é a que está no "Fora do escopo" de `references/mvc-guidelines.md` §5. Aplicar só parte de uma recomendação e declarar o achado resolvido é uma falha.
 - **Adapte-se ao ponto de partida.** Um monolito de arquivo único é reestruturado por completo. Um projeto parcialmente em camadas tem suas camadas existentes **reaproveitadas e completadas**: adicione a camada que falta, mova a lógica para onde ela pertence, passe a usar os módulos ignorados ou remova-os. Não reescreva código que já está no lugar certo.
 - **Mantenha o usuário informado** com os banners exatos abaixo, para que cada fase seja fácil de achar no terminal.
+
+---
+
+## Entrada direta na Fase 3 (`--fase3`)
+
+Use quando as Fases 1 e 2 já rodaram e o relatório foi salvo: por exemplo, para reaplicar a Fase 3 depois de um ajuste na skill. Invocação: `/refactor-arch --fase3 <caminho-do-relatório>`. A própria invocação com `--fase3` é a confirmação do usuário para modificar o projeto.
+
+1. Leia o relatório no caminho informado. Se ele não existir ou não seguir `references/audit-report-template.md`, avise o usuário e **pare**. Não rode as Fases 1–2 por conta própria.
+2. Pule os banners das Fases 1 e 2, mas faça, sem imprimir o bloco da Fase 1, os passos de que a Fase 3 depende: o **inventário de endpoints** (Fase 1, passo 6) e **como subir a aplicação** (Fase 1, passo 7), sobre o código como ele está agora.
+3. Os achados do relatório são a entrada da §3.1. Os `arquivo:linha` do relatório podem estar desatualizados: localize cada ocorrência no código atual antes de agir.
+4. Se o código já tiver sido refatorado antes, a baseline da §3.0 é o **estado atual**. Na tabela de mapeamento, cada ação já aplicada aparece como `já aplicada` com o `arquivo:linha` que a comprova; aplique apenas as pendentes, sem reescrever o que já está no lugar certo.
+5. Não reescreva o relatório de auditoria. A única alteração permitida é a correção de `Verified:` de falso positivo prevista na §3.3.
+6. Siga a Fase 3 a partir da §3.0, normalmente.
 
 ---
 
@@ -90,7 +106,7 @@ Phase 2 complete. Proceed with refactoring (Phase 3)? [y/n]
 ```
 
 8. Quando o usuário responder:
-   - **Salve o relatório** (qualquer que seja a resposta): grave-o em Markdown em `$ARGUMENTS`, se um caminho foi informado, ou em `reports/audit-report.md` dentro do projeto. Crie a pasta se necessário e informe o caminho ao usuário.
+   - **Salve o relatório** (qualquer que seja a resposta): grave-o em Markdown no caminho informado em `$ARGUMENTS`, se houver um, ou em `reports/audit-report.md` dentro do projeto. Crie a pasta se necessário e informe o caminho ao usuário.
    - **y / yes / sim / s**: siga para a Fase 3.
    - **qualquer outra resposta**: pare depois de salvar o relatório.
 
@@ -107,7 +123,7 @@ Leia `references/mvc-guidelines.md` e `references/refactoring-playbook.md` antes
 
 ### 3.1 Planejamento
 
-Imprima a **estrutura alvo** (em árvore) e uma **tabela de mapeamento** (`ID do achado -> padrão do playbook -> arquivos afetados`). Desenhe a estrutura com `mvc-guidelines.md`, usando o layout da stack detectada e adaptando-o às camadas existentes. Depois execute o plano sem perguntar de novo: o usuário já confirmou na Fase 2.
+Imprima a **estrutura alvo** (em árvore) e uma **tabela de mapeamento** com **uma linha por ação** da recomendação, e não uma por achado: quebre a `Recommendation` de cada achado nas ações que ela pede (`ID do achado (a|b|…) -> ação -> padrão do playbook -> arquivos afetados`). Exemplo: `F-02 (a) ignorar role/active do body -> PB-06`, `F-02 (b) trocar token previsível por token assinado -> PB-06`, `F-02 (c) exigir autenticação nas rotas -> remanescente (§5 Fora do escopo)`. Só a ação listada no "Fora do escopo" de `mvc-guidelines.md` §5 pode ser marcada como remanescente. Desenhe a estrutura com `mvc-guidelines.md`, usando o layout da stack detectada e adaptando-o às camadas existentes. Depois execute o plano sem perguntar de novo: o usuário já confirmou na Fase 2.
 
 ### 3.2 Transformação
 
@@ -133,9 +149,11 @@ Regras durante a transformação:
 1. Instale as dependências, se mudaram. **Suba** a aplicação refatorada em background, espere até ela ficar pronta e confirme que não há erros no log de inicialização.
 2. Rode **as mesmas requisições da baseline** e compare os status codes e o formato das respostas. Toda diferença precisa ser corrigida ou justificada como uma das mudanças de contrato permitidas.
 3. **Re-audite** o código refatorado contra o catálogo. Corrija qualquer achado CRITICAL/HIGH restante. Liste os achados MEDIUM/LOW que sobrarem, com o motivo de terem sido mantidos.
+   - Um **sinal de detecção** do catálogo que continue presente no código (por exemplo `'fake-jwt-token-' + id`) é achado restante, e não "residual": se o playbook tem padrão para ele, aplique. Só o que está no "Fora do escopo" de `mvc-guidelines.md` §5 pode ser listado como residual.
    - Se a baseline ou a re-auditoria mostrar que um achado da Fase 2 era **falso positivo**, não o apague: no relatório salvo, troque o `Verified:` dele por `no — Correção (Fase 3): falso positivo. <evidência>` e cite a correção em `## Changes`.
-4. Derrube a aplicação e restaure o banco/estado.
-5. Se algo falhar, corrija e rode a validação de novo. Repita até passar, ou até encontrar um bloqueio que você não consiga resolver. Nesse caso, reporte o bloqueio com honestidade: nunca imprima ✓ para uma verificação que falhou.
+4. **Confira as recomendações, ação por ação.** Releia a `Recommendation` de cada achado do relatório salvo e percorra a tabela de mapeamento da §3.1. Para cada ação, registre `aplicada` com o `arquivo:linha` que a comprova, ou `remanescente` com a linha de §5 que a deixa fora do escopo. Toda ação que não se encaixar em nenhum dos dois casos ainda está pendente: aplique-a e repita a validação antes de seguir para o resumo.
+5. Derrube a aplicação e restaure o banco/estado.
+6. Se algo falhar, corrija e rode a validação de novo. Repita até passar, ou até encontrar um bloqueio que você não consiga resolver. Nesse caso, reporte o bloqueio com honestidade: nunca imprima ✓ para uma verificação que falhou.
 
 ### 3.4 Resumo
 
@@ -149,7 +167,7 @@ PHASE 3: REFACTORING COMPLETE
 <árvore do novo layout, com um comentário curto sobre o papel de cada arquivo>
 
 ## Changes
-<ID do achado → o que foi feito, uma linha por achado>
+<ID do achado (ação) → o que foi feito, uma linha por ação da tabela de mapeamento; no modo --fase3, as ações anteriores aparecem como "já aplicada (arquivo:linha)">
 
 ## Contract changes
 <correções de segurança/integridade que alteraram respostas (campo removido, endpoint desabilitado, novo 400/404), ou "nenhuma">
@@ -157,7 +175,8 @@ PHASE 3: REFACTORING COMPLETE
 ## Validation
   ✓|✗ Application boots without errors (<comando de start>)
   ✓|✗ All endpoints respond correctly (<aprovadas>/<total> requisições da baseline batem)
-  ✓|✗ Zero CRITICAL/HIGH anti-patterns remaining (<MEDIUM/LOW restantes, se houver>)
+  ✓|✗ Zero CRITICAL/HIGH anti-patterns remaining (<MEDIUM/LOW restantes, se houver; residual só o que está fora do escopo de §5>)
+  ✓|✗ All recommendations applied (<aplicadas>/<total> ações; remanescentes: <ações fora do escopo de §5, ou "nenhuma">)
 
 ## How to run
 <comandos de instalação + seed + start, variáveis de ambiente obrigatórias>

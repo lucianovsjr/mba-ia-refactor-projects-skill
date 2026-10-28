@@ -160,7 +160,15 @@ Não reescreva o que já está no lugar certo. **Complete e conserte**:
 | Rejeitar entradas que corrompem dados | quantidades negativas, IDs de referência inexistentes → 400/404 em vez de 201 |
 | Responder erro onde a baseline mentia | `DELETE` de recurso inexistente → 404 em vez de 200 |
 
-**Fora do escopo** (registre como recomendação remanescente, não implemente): exigir autenticação nas rotas comuns que hoje são públicas, ou trocar o mecanismo de login/token. Isso quebraria todos os clientes existentes e exige decisão de produto.
+**Correções obrigatórias que não mudam o contrato** (aplique e liste em `## Changes`, não em `## Contract changes`):
+
+| Correção | Exemplo |
+|---|---|
+| Substituir token previsível por token assinado | `'fake-jwt-token-' + id` → token assinado com a `SECRET_KEY` (PB-06). O campo, o tipo (string), o status e o envelope continuam iguais. |
+
+O contrato cobre a **forma** da resposta, não o valor de campos opacos. O cliente só guarda e reenvia o token e não pode interpretar o conteúdo dele, então trocar o *valor* não quebra ninguém. O que quebraria é passar a *exigir* o token.
+
+**Fora do escopo** (registre como recomendação remanescente, não implemente): exigir autenticação (token, sessão, header) nas rotas comuns que hoje são públicas. Isso quebraria todos os clientes existentes e exige decisão de produto. Esse limite **não** autoriza manter um token forjável: a troca acima continua obrigatória.
 
 ---
 

@@ -185,7 +185,7 @@ grep -rnE "get\(['\"](role|is_admin|tipo|active)['\"]|body\.(role|isAdmin)" --in
 ```
 
 **Impacto:** qualquer pessoa pode destruir dados, ler informações financeiras, virar administrador ou comprar em nome de terceiros.
-**Recomendação:** remova os endpoints que executam SQL/código arbitrário, proteja as rotas administrativas, ignore campos de privilégio vindos do body e verifique as credenciais antes de agir em nome de alguém.
+**Recomendação:** remova os endpoints que executam SQL/código arbitrário, proteja as rotas administrativas, ignore campos de privilégio vindos do body, verifique as credenciais antes de agir em nome de alguém e substitua tokens falsos ou previsíveis por tokens assinados com a `SECRET_KEY` (PB-06; não muda o contrato). Exigir autenticação nas rotas hoje públicas fica como recomendação remanescente.
 
 ---
 

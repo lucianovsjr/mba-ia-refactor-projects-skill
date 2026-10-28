@@ -136,18 +136,20 @@ Projeto **parcialmente organizado** (`models/`, `routes/`, `services/`, `utils/`
 | Catálogo de anti-patterns | `anti-patterns-catalog.md` | **22 anti-patterns** (CRITICAL 6 · HIGH 5 · MEDIUM 7 · LOW 4), cada um com sinais de detecção, `grep` testado, exemplo, impacto e padrão do playbook; tabelas de **APIs deprecated** "obsoleto → moderno" para Python/Flask/SQLAlchemy e Node/Express |
 | Template de relatório | `audit-report-template.md` | Formato exato (IDs `F-xx`, `File:` com linhas, `Catalog`, `Verified`), seções fixas de Deprecated APIs e Architecture Notes, exemplo preenchido com projeto fictício e checklist antes de imprimir |
 | Guidelines de arquitetura | `mvc-guidelines.md` | Responsabilidades e limites de cada camada, regras de dependência, estrutura de pastas por stack, como adaptar um monolito e um projeto parcialmente em camadas, **mudanças de contrato permitidas** |
-| Playbook de refatoração | `refactoring-playbook.md` | **18 padrões** (PB-01…PB-18) com código antes/depois em Python e JavaScript, mais a ordem de aplicação com validação após cada grupo |
+| Playbook de refatoração | `refactoring-playbook.md` | **18 padrões** (PB-01…PB-18) com código antes/depois em Python e JavaScript, mais a ordem de aplicação com validação após cada grupo. O PB-06 inclui a troca do token previsível por token assinado |
 
 ### Decisões de design
 
-1. **O SKILL.md conduz o processo; as referências guardam o conhecimento.** O SKILL.md diz *o que fazer e quando*, e cada fase indica qual referência ler *naquele momento*. Isso mantém o prompt curto (~170 linhas) e deixa o conhecimento de domínio editável sem mexer no fluxo.
+1. **O SKILL.md conduz o processo; as referências guardam o conhecimento.** O SKILL.md diz *o que fazer e quando*, e cada fase indica qual referência ler *naquele momento*. Isso mantém o prompt curto (~190 linhas) e deixa o conhecimento de domínio editável sem mexer no fluxo.
 2. **Saídas com formato fixo.** Os banners e rótulos são copiados do exemplo do desafio (`PHASE 1: PROJECT ANALYSIS`, `ARCHITECTURE AUDIT REPORT`, `PHASE 3: REFACTORING COMPLETE`). O texto da skill está em português e os rótulos em inglês.
 3. **Nada é escrito antes da confirmação.** As Fases 1 e 2 são somente leitura (podem subir a app original para testar, restaurando o estado depois). O relatório é salvo **depois** da resposta do usuário, no caminho passado como argumento (`/refactor-arch ../reports/audit-project-1.md`).
 4. **Evidência, não suposição.** Todo achado precisa de `arquivo:linha` lido na execução. A Fase 2 confirma os achados de alto impacto com a app rodando (`Verified: yes (...)`).
 5. **A skill captura a própria baseline.** A Fase 1 inventaria os endpoints e a Fase 3 grava o comportamento original antes de mexer no código. A validação compara status e formato das respostas com essa baseline, então a skill não depende de testes externos e pode ser copiada para qualquer projeto.
-6. **Contrato preservado, com exceções explícitas.** Paths, métodos, status e formato das respostas não mudam, a não ser por **correções de segurança e integridade**: remover dados sensíveis, desligar endpoints de SQL arbitrário, bloquear escalada de privilégio e rejeitar entradas que corrompem dados. Cada exceção é listada em `## Contract changes`. Exigir login nas rotas hoje públicas ficou **fora do escopo**, porque quebraria os clientes, e é registrado como recomendação.
+6. **Contrato preservado, com exceções explícitas.** Paths, métodos, status e formato das respostas não mudam, a não ser por **correções de segurança e integridade**: remover dados sensíveis, desligar endpoints de SQL arbitrário, bloquear escalada de privilégio e rejeitar entradas que corrompem dados. Cada exceção é listada em `## Contract changes`. Trocar um token previsível por um token assinado **não** é exceção: o token é opaco para o cliente, então só o valor muda, e a troca é obrigatória. Exigir login nas rotas hoje públicas ficou **fora do escopo**, porque quebraria os clientes, e é registrado como recomendação.
 7. **Adaptação ao ponto de partida.** Um monolito é reestruturado por completo. Num projeto parcialmente em camadas, a skill reaproveita o que já está no lugar certo, cria a camada que falta e remove ou passa a usar o código que existe sem ser usado.
 8. **A skill não faz commit.** O humano revisa as mudanças e commita.
+9. **Recomendação se aplica por inteiro.** A Fase 3 mapeia **uma linha por ação** da `Recommendation` de cada achado e, na validação, confere cada ação como `aplicada` (com `arquivo:linha`) ou `remanescente`. Só pode ser remanescente o que está no "Fora do escopo" das guidelines. O resumo traz a linha `All recommendations applied (<aplicadas>/<total>)`.
+10. **Entrada direta na Fase 3.** `/refactor-arch --fase3 <relatório>` pula as Fases 1–2 e usa um relatório já salvo. Sobre código já refatorado, a skill marca o que já está feito como `já aplicada` e aplica só o que ficou pendente.
 
 ### Anti-patterns do catálogo e por quê
 
@@ -177,8 +179,16 @@ Os 22 itens saíram da análise manual (seção A). Todo achado dos 3 projetos s
 | Falso positivo no P3: a skill reportou "categoria apagada deixa órfãos", mas o SQLAlchemy já anula a FK | A própria skill percebeu na Fase 3, pela baseline. Na iteração (Task 15), acrescentei ao catálogo um bloco "Não é órfão" que exige confirmação dinâmica com ORM, e formalizei como marcar falsos positivos no relatório |
 | A skill atualizou o `sqlite3` de 5 para 6 no P2, o que exige Node ≥ 20.17 | Regra nova no SKILL.md: atualizar para nova versão major só para corrigir um achado, conferindo o runtime e declarando o requisito no manifesto |
 | Express 4 não captura erros de handlers async | O playbook (PB-12) traz o `asyncHandler`, que a skill usou no P2 |
+| **Retorno da correção:** no P3, o F-02 recomendava trocar o `fake-jwt-token-<id>` por um token assinado, mas a Fase 3 manteve o token forjável e declarou ✓. A causa era uma contradição: as guidelines (§5) punham "trocar o mecanismo de login/token" fora do escopo, e o playbook não tinha padrão para a troca | Acrescentei ao PB-06 o padrão "Token previsível → token assinado" (`itsdangerous` em Flask, HMAC do `crypto` em Node, com a chave injetada). Nas guidelines, a troca virou correção obrigatória que **não** muda o contrato, e só *exigir* autenticação ficou fora do escopo. O SKILL.md passou a mapear e conferir cada ação da recomendação. Por fim, reexecutei só a Fase 3 no P3 com `--fase3` (veja abaixo) |
 
 > Os relatórios `reports/audit-project-{1,2,3}.md` foram gerados com a versão da skill anterior aos ajustes da Task 15. Para comprovar os ajustes, **reexecutei as Fases 1–2 da versão final sobre o código original do P3** (git worktree no commit `12a317f`, respondendo `n` na confirmação): [`reports/audit-project-3-rerun.md`](reports/audit-project-3-rerun.md). Resultado: **18 achados, sem o falso positivo**. A skill testou o `DELETE /categories` com a app rodando e registrou que "não deixa órfãos (o SQLAlchemy fez `SET NULL`)". Os outros 18 achados válidos continuam lá, nenhum arquivo foi modificado, e o `datetime.utcnow()` deixou de ser contado como deprecated porque o Python instalado é o 3.11, enquanto a depreciação vale a partir do 3.12 (a regra de "versão instalada" do catálogo).
+
+> **Reexecução da Fase 3 no P3 (retorno da correção):** com a skill corrigida, rodei `/refactor-arch --fase3 ../reports/audit-project-3.md` sobre o código já refatorado: [`reports/refactor-project-3-rerun-2.md`](reports/refactor-project-3-rerun-2.md), com log em [`docs/logs/project-3-rerun-phase3.log`](docs/logs/project-3-rerun-phase3.log).
+>
+> - **Mapeamento:** a skill marcou 19 ações como `já aplicada`, com `arquivo:linha`. Encontrou sozinha a única pendente, a F-02 (b), e trocou o token: `utils/tokens.py` novo, `login(data, secret_key)` no controller e a rota injetando `current_app.config['SECRET_KEY']`.
+> - **Contrato e dependências:** nenhuma mudança de contrato e nenhuma dependência nova.
+> - **Resultado:** `All recommendations applied (20/21)`. A única ação remanescente é exigir autenticação nas rotas.
+> - **Prova:** o token emitido é aceito com a `SECRET_KEY`. São rejeitados `fake-jwt-token-<id>`, o payload trocado para outro id, a assinatura adulterada e outra chave.
 
 ---
 
@@ -196,7 +206,7 @@ Os 22 itens saíram da análise manual (seção A). Todo achado dos 3 projetos s
 
 **Achado que a skill encontrou e a análise manual não:** no P2, `POST /api/checkout` com `"card": 4111` (número em vez de string) lança `TypeError` dentro de um callback e **derruba o processo**, um DoS sem autenticação.
 
-Saídas completas de cada fase: `reports/analysis-project-N.md` (Fase 1), `reports/audit-project-N.md` (Fase 2) e `reports/refactor-project-N.md` (Fase 3).
+Saídas completas de cada fase: `reports/analysis-project-N.md` (Fase 1), `reports/audit-project-N.md` (Fase 2) e `reports/refactor-project-N.md` (Fase 3). No P3, a reexecução da Fase 3 que trocou o token está em [`reports/refactor-project-3-rerun-2.md`](reports/refactor-project-3-rerun-2.md).
 
 ### Estrutura antes × depois
 
@@ -249,7 +259,7 @@ routes/report_routes.py (223)        routes/report_routes.py + category_routes.p
 services/notification_service.py ✗   controllers/{task,user,category,report}_controller.py   # camada criada
 utils/helpers.py                 ✗   config/settings.py
                                      middlewares/error_handler.py
-                                     utils/{constants,errors,validators,dates}.py
+                                     utils/{constants,errors,validators,dates,tokens}.py   # tokens: login assinado
                                      .env.example
 (✗ = código morto removido)
 ```
@@ -261,14 +271,15 @@ Além da validação feita pela própria skill, validei cada projeto por fora co
 | Verificação | P1 | P2 | P3 |
 |---|---|---|---|
 | Boot sem erros / sem warnings de deprecated | ✅ | ✅ (`--trace-deprecation`) | ✅ (`PYTHONWARNINGS=always`) |
-| Smoke test | ✅ 25/25¹ | ✅ 7/7 | ✅ 26/26 |
+| Smoke test | ✅ 25/25¹ | ✅ 7/7 | ✅ 27/27 (28/28 com `SECRET_KEY`)² |
 | Formato das respostas igual à baseline | 20/25 (5 = mudanças aprovadas) | 6/7 (1 = texto do DELETE) | 22/26 (4 = `password` removido) + valores de leitura idênticos |
-| Ataques da análise manual bloqueados | SQLi no login → 401; quantidade negativa → 400 | compra em nome de terceiro → 401; `card` numérico → 400 sem derrubar o processo | criar admin anônimo → `role: user`; `priority: "alta"` → 400 JSON |
-| Greps do catálogo no código novo | 0 SQL concatenado, 0 `print`, 0 segredos | 0 SQL concatenado, 0 `console.*` fora do logger | 0 `Query.get`, 0 `utcnow`, 0 `except:` |
+| Ataques da análise manual bloqueados | SQLi no login → 401; quantidade negativa → 400 | compra em nome de terceiro → 401; `card` numérico → 400 sem derrubar o processo | criar admin anônimo → `role: user`; `priority: "alta"` → 400 JSON; token forjado (`fake-jwt-token-2`, payload trocado, outra chave) → `BadSignature` |
+| Greps do catálogo no código novo | 0 SQL concatenado, 0 `print`, 0 segredos | 0 SQL concatenado, 0 `console.*` fora do logger | 0 `Query.get`, 0 `utcnow`, 0 `except:`, 0 `fake-jwt` |
 
 ¹ Script ajustado só nos 2 endpoints admin (`/admin/query` removido, `/admin/reset-db` desligado por padrão), mudanças de contrato aprovadas.
+² As 26 checagens de contrato mais a checagem "token do login não é previsível". Com `SECRET_KEY` exportada (a mesma da app), o script também confere a assinatura. As checagens de token falham de propósito no código original (26 passed · 1 failed), que devolve `fake-jwt-token-<id>`.
 
-**Logs das aplicações rodando após a refatoração:** [`docs/logs/project-1-run.log`](docs/logs/project-1-run.log), [`project-2-run.log`](docs/logs/project-2-run.log) e [`project-3-run.log`](docs/logs/project-3-run.log). Cada log traz o boot e a saída do smoke test.
+**Logs das aplicações rodando após a refatoração:** [`docs/logs/project-1-run.log`](docs/logs/project-1-run.log), [`project-2-run.log`](docs/logs/project-2-run.log), [`project-3-run.log`](docs/logs/project-3-run.log) e [`project-3-rerun-phase3.log`](docs/logs/project-3-rerun-phase3.log) (reexecução da Fase 3 com a troca do token). Cada log traz o boot e a saída do smoke test.
 
 ### Checklist de validação
 
@@ -300,8 +311,8 @@ Além da validação feita pela própria skill, validei cada projeto por fora co
 
 - **Python/Flask monolítico (P1):** a skill separou os domínios pelas tabelas e foi a única execução que precisou de um guarda de admin (`ENABLE_ADMIN_ENDPOINTS` + `X-Admin-Token`). Converteu as senhas em texto puro de bancos antigos no boot.
 - **Node/Express (P2):** a skill teve o cuidado de **manter as respostas de erro em texto puro**, como na baseline, e os nomes de campo do body (`usr`, `eml`, `c_id`), renomeando só os identificadores internos. O ponto mais delicado foi a concorrência numa conexão SQLite única: a skill encontrou uma leitura suja nos próprios testes e serializou as transações. Também foi a única execução que atualizou uma dependência para nova versão major (`sqlite3` 5 → 6). No P3 houve só remoção de dependências não usadas e o pin do SQLAlchemy.
-- **Python/Flask parcialmente em camadas (P3):** a skill **não reescreveu** o projeto. Manteve os models e as rotas, criou a camada de controllers, passou a usar os métodos de domínio que eram ignorados e apagou só o código morto. Os valores das respostas de leitura ficaram idênticos aos originais. Foi a execução com o falso positivo, o que motivou o ajuste do catálogo.
-- **Em todas:** a pausa da Fase 2 foi respeitada, os ataques reproduzidos na análise manual foram confirmados dinamicamente na Fase 2 e bloqueados na Fase 3, e as limitações que exigiriam decisão de produto (autenticação obrigatória, token real) ficaram como recomendação, sem quebrar clientes.
+- **Python/Flask parcialmente em camadas (P3):** a skill **não reescreveu** o projeto. Manteve os models e as rotas, criou a camada de controllers, passou a usar os métodos de domínio que eram ignorados e apagou só o código morto. Os valores das respostas de leitura ficaram idênticos aos originais. Foi a execução com o falso positivo, o que motivou o ajuste do catálogo. Também foi onde a primeira execução deixou o token previsível. Depois da correção, a reexecução com `--fase3` trocou o token e não mexeu em nada além disso.
+- **Em todas:** a pausa da Fase 2 foi respeitada, e os ataques reproduzidos na análise manual foram confirmados dinamicamente na Fase 2 e bloqueados na Fase 3. Só a autenticação obrigatória nas rotas, que exigiria decisão de produto, ficou como recomendação, sem quebrar clientes.
 
 ---
 
@@ -318,7 +329,7 @@ Além da validação feita pela própria skill, validei cada projeto por fora co
 
 ### Executar a skill
 
-A skill fica em `.claude/skills/refactor-arch/` dentro de cada projeto. O argumento opcional é o caminho onde o relatório da Fase 2 será salvo (padrão: `reports/audit-report.md` dentro do projeto).
+A skill fica em `.claude/skills/refactor-arch/` dentro de cada projeto. O argumento opcional é o caminho onde o relatório da Fase 2 será salvo (padrão: `reports/audit-report.md` dentro do projeto). Com `--fase3`, o caminho aponta para um relatório já salvo e a skill vai direto para a Fase 3.
 
 ```bash
 # Projeto 1
@@ -335,6 +346,13 @@ claude "/refactor-arch ../reports/audit-project-3.md"
 ```
 
 Em cada execução, a skill imprime a Fase 1, imprime o relatório da Fase 2 e **para** em `Proceed with refactoring (Phase 3)? [y/n]`. Revise o relatório e responda `y` para refatorar. No fim, ela imprime `PHASE 3: REFACTORING COMPLETE` com o checklist de validação.
+
+Para reaplicar só a Fase 3 a partir de um relatório existente, por exemplo depois de ajustar a skill:
+
+```bash
+cd task-manager-api
+claude "/refactor-arch --fase3 ../reports/audit-project-3.md"
+```
 
 > Para rodar a skill de novo sobre o código **original**, use um commit anterior à refatoração (por exemplo, `git worktree add /tmp/p3-original 12a317f`). Este repositório já contém o código refatorado.
 
@@ -354,8 +372,10 @@ cd .. && BASE_URL=http://localhost:3000 ./scripts/smoke-test-project-2.sh      #
 
 # Projeto 3 — rode o seed antes do boot
 cd task-manager-api && python -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python seed.py && PORT=5002 .venv/bin/python app.py &
-cd .. && BASE_URL=http://localhost:5002 ./scripts/smoke-test-project-3.sh      # esperado: 26 passed
+.venv/bin/python seed.py && SECRET_KEY=dev-key PORT=5002 .venv/bin/python app.py &
+cd .. && BASE_URL=http://localhost:5002 ./scripts/smoke-test-project-3.sh      # esperado: 27 passed
+# com a mesma SECRET_KEY da app, o script também confere a assinatura do token do login:
+SECRET_KEY=dev-key BASE_URL=http://localhost:5002 ./scripts/smoke-test-project-3.sh   # esperado: 28 passed
 ```
 
 Para comparar o corpo das respostas com o comportamento original, rode o smoke test com `OUT_DIR=<pasta>` e compare com [`scripts/baseline/project-N/`](scripts/baseline). As diferenças esperadas estão em `## Contract changes` de cada `reports/refactor-project-N.md`.

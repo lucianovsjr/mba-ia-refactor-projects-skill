@@ -20,5 +20,3 @@ DEFAULT_COLOR = "#000000"
 
 RECENT_ACTIVITY_DAYS = 7
 DATE_FORMAT = "%Y-%m-%d"
-
-LOGIN_TOKEN_PREFIX = "fake-jwt-token-"

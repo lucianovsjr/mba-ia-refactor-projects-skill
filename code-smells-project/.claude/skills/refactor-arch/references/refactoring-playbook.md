@@ -11,7 +11,7 @@ Referência da **Fase 3**. Para cada anti-pattern do [catálogo](anti-patterns-c
 | PB-03 | Quebrar God Class em camadas por domínio | AP-03 |
 | PB-04 | Hash de senha com KDF e salt | AP-04 |
 | PB-05 | Serialização por lista branca e logs sem dados sensíveis | AP-05 |
-| PB-06 | Desabilitar endpoints perigosos e bloquear escalada de privilégio | AP-06 |
+| PB-06 | Desabilitar endpoints perigosos, bloquear escalada de privilégio e assinar tokens | AP-06 |
 | PB-07 | Mover regra de negócio da rota para o controller | AP-08 |
 | PB-08 | App factory, composition root e injeção de dependência | AP-09, AP-10 |
 | PB-09 | Transação por caso de uso e integridade referencial | AP-11 |
@@ -363,7 +363,7 @@ logger.info(`Processando pagamento com cartão ${maskCard(card)}`);
 
 ---
 
-## PB-06 — Desabilitar endpoints perigosos e bloquear escalada de privilégio
+## PB-06 — Desabilitar endpoints perigosos, bloquear escalada de privilégio e assinar tokens
 
 **Corrige:** AP-06. Siga os limites de `mvc-guidelines.md` §5: corrija sem tornar obrigatório o login de rotas que hoje são públicas.
 
@@ -371,7 +371,8 @@ logger.info(`Processando pagamento com cartão ${maskCard(card)}`);
 1. Os endpoints que executam SQL/código arbitrário ou apagam o banco ficam **desligados por padrão** e só são habilitados com `ENABLE_ADMIN_ENDPOINTS=true` **e** o header `X-Admin-Token` igual a `ADMIN_TOKEN` (env). O endpoint de SQL arbitrário pode simplesmente ser **removido**.
 2. Campos de privilégio (`role`, `tipo`, `is_admin`, `active`) vindos do body em rotas públicas são **ignorados** (ficam com o default) ou exigem o token de admin.
 3. Fluxos que agem em nome de um usuário existente **verificam a credencial** antes (por exemplo, checkout com email já cadastrado exige a senha correta → 401).
-4. Liste tudo em `## Contract changes`. Registre "exigir autenticação nas rotas" como recomendação remanescente.
+4. Tokens falsos ou previsíveis emitidos pelo login (`'fake-jwt-token-' + id`, id em base64, timestamp) são **substituídos por um token assinado** com a `SECRET_KEY` da config. Veja "Token previsível → token assinado" abaixo.
+5. Liste em `## Contract changes` o que mudou nas respostas (passos 1–3). A troca do token do passo 4 **não** é mudança de contrato e vai só em `## Changes`. Registre "exigir autenticação nas rotas" como recomendação remanescente.
 
 **Antes:**
 ```python
@@ -429,6 +430,103 @@ if (existing && !verifyPassword(password ?? '', existing.pass)) {
     throw new UnauthorizedError('Credenciais inválidas');
 }
 ```
+
+### Token previsível → token assinado
+
+Um token montado a partir do id (`'fake-jwt-token-' + id`) pode ser forjado para qualquer usuário. A troca **não quebra contrato**: o token é opaco para o cliente, que só o guarda e o reenvia. O endpoint de login continua com o mesmo status, as mesmas chaves e o campo `token` continua sendo string; só o **valor** muda. Exigir o token nas rotas é outra coisa e continua fora do escopo (§5).
+
+**Regras:**
+- Assine com a `SECRET_KEY` do módulo de config (PB-01), nunca com uma chave literal, e use um `salt`/propósito próprio para o token de login.
+- **Injete a chave.** O módulo de tokens recebe a chave como parâmetro e não importa config nem framework. A rota lê a chave da config da app (`current_app.config["SECRET_KEY"]`, `config.secretKey`) e a repassa ao controller. Assim o controller continua sem importar o framework HTTP (`mvc-guidelines.md`), e a função funciona com qualquer config: factory, testes ou outra chave.
+- O payload leva só o id do usuário. Nada de email, papel, senha ou hash.
+- O token carrega o instante de emissão (o `URLSafeTimedSerializer` já inclui; em Node, `iat`), para que quem o verificar aplique uma expiração com constante nomeada (`max_age`).
+- Use o que a stack já traz: em Flask, `itsdangerous` (dependência do próprio Flask, sem pacote novo no manifesto); em Node, `crypto` nativo com HMAC-SHA256. Não adicione uma biblioteca de JWT só para isso.
+- Não crie no projeto uma função de verificação que nenhuma rota chama (seria código morto, AP-22). Verifique o token no passo de validação (§3.3) com o snippet abaixo.
+- Remova a constante/prefixo do token antigo e qualquer código que só existia para montá-lo.
+- Documente no `.env.example` que, sem `SECRET_KEY` definida, a chave aleatória de desenvolvimento invalida os tokens a cada restart.
+
+**Antes (Python):**
+```python
+def login(data):
+    ...
+    return user, 'fake-jwt-token-' + str(user.id)
+```
+
+**Depois (Python):**
+```python
+# src/utils/tokens.py
+from itsdangerous import URLSafeTimedSerializer
+
+LOGIN_TOKEN_SALT = "login-token"
+
+
+def issue_login_token(user_id, secret_key):
+    """Token opaco para o cliente, assinado com a SECRET_KEY: não dá para forjá-lo para outro id."""
+    return URLSafeTimedSerializer(secret_key, salt=LOGIN_TOKEN_SALT).dumps({"uid": user_id})
+```
+```python
+# src/controllers/user_controller.py (trecho)
+from src.utils.tokens import issue_login_token
+
+def login(data, secret_key):
+    ...
+    return user, issue_login_token(user.id, secret_key)
+```
+```python
+# src/routes/user_routes.py (trecho): a rota injeta a chave da config da app
+from flask import current_app
+
+@user_bp.route("/login", methods=["POST"])
+def login():
+    user, token = user_controller.login(request.get_json(silent=True), current_app.config["SECRET_KEY"])
+    return jsonify({"message": "Login realizado com sucesso", "user": user.to_dict(), "token": token}), 200
+```
+
+**Validação (§3.3), sem deixar código de verificação no projeto:**
+```python
+# rode com o interpretador do projeto; SECRET_KEY = a mesma usada para subir a app
+from itsdangerous import BadSignature, URLSafeTimedSerializer
+
+LOGIN_TOKEN_MAX_AGE = 60 * 60 * 24  # segundos
+serializer = URLSafeTimedSerializer(SECRET_KEY, salt="login-token")
+assert serializer.loads(token, max_age=LOGIN_TOKEN_MAX_AGE) == {"uid": 1}   # token do POST /login
+for forged in ("fake-jwt-token-2", token[:-2] + "xx"):
+    try:
+        serializer.loads(forged)
+        raise AssertionError("token forjado aceito")
+    except BadSignature:
+        pass                                                                 # rejeitado, como esperado
+```
+Confira também que o mesmo token é rejeitado com outra `SECRET_KEY`.
+
+**Antes (JavaScript):**
+```js
+res.json({ message: 'Login realizado', token: `fake-jwt-token-${user.id}` });
+```
+
+**Depois (JavaScript):**
+```js
+// src/utils/tokens.js
+const crypto = require('crypto');
+
+const sign = (payload, secretKey) =>
+    crypto.createHmac('sha256', secretKey).update(payload).digest('base64url');
+
+function issueLoginToken(userId, secretKey) {
+    const payload = Buffer.from(JSON.stringify({ uid: userId, iat: Date.now() })).toString('base64url');
+    return `${payload}.${sign(payload, secretKey)}`;
+}
+
+module.exports = { issueLoginToken };
+```
+```js
+// src/routes/userRoutes.js (trecho): a rota injeta a chave da config
+router.post('/login', async (req, res) => {
+    const { user, token } = await userController.login(req.body, config.secretKey);
+    res.json({ message: 'Login realizado', user, token });
+});
+```
+Na validação, recalcule `sign(payload, secretKey)` e compare com `crypto.timingSafeEqual` (buffers do mesmo tamanho), checando `iat` contra a expiração.
 
 ---
 

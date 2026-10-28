@@ -70,6 +70,7 @@ Removidos: services/ (código morto), utils/helpers.py
   ✓ All endpoints respond correctly (43/52 requisições da baseline batem em status, tipo e formato, e os valores das respostas de leitura são idênticos. As 9 diferenças são as mudanças de contrato listadas acima)
   ✓ Zero CRITICAL/HIGH anti-patterns remaining, com uma ressalva que é limite da regra §5 das guidelines, e não uma correção que deixei de fazer:
      - o AP-06 residual continua: as rotas destrutivas (`DELETE /users`, `/tasks`, `/categories`) seguem públicas e o token do login segue previsível (`fake-jwt-token-<id>`). Nenhuma rota usa esse token, mas exigir autenticação ou trocar o mecanismo de login quebraria todos os clientes, então fica como recomendação;
+       > **Nota (2026-10-28):** a parte do token foi corrigida na reexecução da Fase 3 ([refactor-project-3-rerun-2.md](refactor-project-3-rerun-2.md)). O `fake-jwt-token-<id>` virou um token assinado com a `SECRET_KEY`, sem mudança de contrato. Só a exigência de autenticação nas rotas continua como recomendação (§5 Fora do escopo).
      - LOW: a senha mínima continua com 4 caracteres, para manter o contrato e as senhas do seed. A recomendação é subir esse limite.
 
 Verificações extras:

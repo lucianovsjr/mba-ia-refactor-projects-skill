@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from controllers import user_controller
 from routes.serializers import user_task_summary, user_with_task_count, user_with_tasks
@@ -44,7 +44,7 @@ def get_user_tasks(user_id):
 
 @user_bp.route('/login', methods=['POST'])
 def login():
-    user, token = user_controller.login(request.get_json(silent=True))
+    user, token = user_controller.login(request.get_json(silent=True), current_app.config['SECRET_KEY'])
     return jsonify({
         'message': 'Login realizado com sucesso',
         'user': user.to_dict(),

@@ -13,6 +13,8 @@ BASE_URL=http://localhost:5001 ./scripts/smoke-test-project-1.sh
 
 Resultado da baseline: **P1 25/25 · P2 7/7 · P3 26/26**.
 
+> Depois do retorno da correção, o smoke test do P3 ganhou uma checagem de token (mais uma de assinatura, com `SECRET_KEY`). No código original ela falha de propósito (26 passed · 1 failed), porque o token é o previsível `fake-jwt-token-<id>`. As 26 checagens de contrato continuam valendo para o original e para o refatorado.
+
 > **Exceções aceitas ao contrato (correções de segurança/integridade):** remoção de dados sensíveis das respostas (ex.: `password`, `secret_key`), desativação de endpoints que executam SQL arbitrário ou apagam o banco (`/admin/query`, `/admin/reset-db`), bloqueio de escalada de privilégio (`role` vindo do body) e rejeição de entradas que corrompem dados (quantidade negativa, DELETE de ID inexistente). Ver `mvc-guidelines.md` §5 da skill.
 
 ---

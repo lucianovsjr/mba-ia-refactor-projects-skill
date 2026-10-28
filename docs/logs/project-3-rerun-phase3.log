@@ -1,0 +1,173 @@
+# /refactor-arch --fase3 ../reports/audit-project-3.md (task-manager-api, 2026-10-28)
+# Fase 3 reexecutada sobre o código já refatorado. Única ação pendente: F-02 (b), token assinado.
+
+## 3.0 Baseline (código antes da troca do token)
+$ cp instance/tasks.db <scratchpad>/tasks.db.bak
+80f283d0ad3251a72dcfaae1e91f9603829e6825  instance/tasks.db
+
+$ .venv/bin/python seed.py
+
+$ PORT=5002 SECRET_KEY=baseline-key .venv/bin/python -W always app.py
+ * Serving Flask app 'app'
+ * Debug mode: off
+2026-10-28 14:46:30,075 INFO werkzeug: WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5002
+2026-10-28 14:46:30,075 INFO werkzeug: Press CTRL+C to quit
+2026-10-28 14:46:31,084 INFO controllers.task_controller: Task criada id=11
+2026-10-28 14:46:31,257 INFO controllers.task_controller: Task atualizada id=2
+2026-10-28 14:46:31,351 INFO controllers.task_controller: Task deletada id=3
+2026-10-28 14:46:31,804 INFO controllers.user_controller: Usuário criado id=4
+2026-10-28 14:46:32,837 INFO controllers.category_controller: Categoria criada id=5
+2026-10-28 14:46:33,010 INFO controllers.category_controller: Categoria deletada id=5
+2026-10-28 14:46:33,303 INFO controllers.user_controller: Usuário deletado id=3
+
+$ curl http://localhost:5002/  →  200 {"message":"Task Manager API","version":"1.0"}
+$ curl http://localhost:5002/health  →  200 {"status":"ok","timestamp":"..."}
+$ curl http://localhost:5002/nope  →  404
+
+$ OUT_DIR=<scratchpad>/baseline BASE_URL=http://localhost:5002 ./scripts/smoke-test-project-3.sh
+task-manager-api @ http://localhost:5002
+  ✓ GET    /tasks                                   200
+  ✓ GET    /tasks/search?q=login&status=in_progress 200
+  ✓ GET    /tasks/stats                             200
+  ✓ GET    /tasks/1                                 200
+  ✓ GET    /tasks/9999                              404
+  ✓ POST   /tasks                                   201
+  ✓ POST   /tasks                                   400
+  ✓ PUT    /tasks/2                                 200
+  ✓ DELETE /tasks/3                                 200
+  ✓ GET    /users                                   200
+  ✓ GET    /users/1                                 200
+  ✓ GET    /users/9999                              404
+  ✓ POST   /users                                   201
+  ✓ POST   /users                                   409
+  ✓ PUT    /users/2                                 200
+  ✓ GET    /users/1/tasks                           200
+  ✓ POST   /login                                   200
+  ✓ POST   /login                                   401
+  ✓ GET    /reports/summary                         200
+  ✓ GET    /reports/user/1                          200
+  ✓ GET    /reports/user/9999                       404
+  ✓ GET    /categories                              200
+  ✓ POST   /categories                              201
+  ✓ PUT    /categories/1                            200
+  ✓ DELETE /categories/5                            200
+  ✓ DELETE /users/3                                 200
+--------------------------------
+  26 passed | 0 failed
+
+$ cat baseline/login_ok.json
+{"message":"Login realizado com sucesso","token":"fake-jwt-token-1","user":{"active":true,"created_at":"2026-10-28 17:46:29.745303","email":"joao@email.com","id":1,"name":"Jo\u00e3o Silva","role":"admin"}}
+
+
+## 3.2 Transformação (F-02 b)
+$ git diff --stat -- task-manager-api ":!task-manager-api/.claude"
+ task-manager-api/.env.example                   | 3 ++-
+ task-manager-api/README.md                      | 2 +-
+ task-manager-api/controllers/user_controller.py | 7 ++++---
+ task-manager-api/routes/user_routes.py          | 4 ++--
+ task-manager-api/utils/constants.py             | 2 --
+ 5 files changed, 9 insertions(+), 9 deletions(-)
+ task-manager-api/utils/tokens.py (novo, 8 linhas)
+
+## 3.3 Validação (código refatorado)
+$ .venv/bin/python seed.py
+
+$ PORT=5002 SECRET_KEY=validation-key .venv/bin/python -W always app.py
+ * Serving Flask app 'app'
+ * Debug mode: off
+2026-10-28 14:47:31,354 INFO werkzeug: WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5002
+2026-10-28 14:47:31,354 INFO werkzeug: Press CTRL+C to quit
+2026-10-28 14:47:31,656 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:31] "GET / HTTP/1.1" 200 -
+2026-10-28 14:47:31,694 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:31] "GET / HTTP/1.1" 200 -
+2026-10-28 14:47:31,727 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:31] "GET /health HTTP/1.1" 200 -
+2026-10-28 14:47:31,761 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:31] "GET /nope HTTP/1.1" 404 -
+2026-10-28 14:47:31,847 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:31] "GET /tasks HTTP/1.1" 200 -
+2026-10-28 14:47:31,945 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:31] "GET /tasks/search?q=login&status=in_progress HTTP/1.1" 200 -
+2026-10-28 14:47:32,047 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "GET /tasks/stats HTTP/1.1" 200 -
+2026-10-28 14:47:32,167 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "GET /tasks/1 HTTP/1.1" 200 -
+2026-10-28 14:47:32,261 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "GET /tasks/9999 HTTP/1.1" 404 -
+2026-10-28 14:47:32,355 INFO controllers.task_controller: Task criada id=11
+2026-10-28 14:47:32,355 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "POST /tasks HTTP/1.1" 201 -
+2026-10-28 14:47:32,443 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "POST /tasks HTTP/1.1" 400 -
+2026-10-28 14:47:32,535 INFO controllers.task_controller: Task atualizada id=2
+2026-10-28 14:47:32,535 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "PUT /tasks/2 HTTP/1.1" 200 -
+2026-10-28 14:47:32,629 INFO controllers.task_controller: Task deletada id=3
+2026-10-28 14:47:32,629 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "DELETE /tasks/3 HTTP/1.1" 200 -
+2026-10-28 14:47:32,731 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "GET /users HTTP/1.1" 200 -
+2026-10-28 14:47:32,826 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "GET /users/1 HTTP/1.1" 200 -
+2026-10-28 14:47:32,913 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:32] "GET /users/9999 HTTP/1.1" 404 -
+2026-10-28 14:47:33,081 INFO controllers.user_controller: Usuário criado id=4
+2026-10-28 14:47:33,081 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "POST /users HTTP/1.1" 201 -
+2026-10-28 14:47:33,167 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "POST /users HTTP/1.1" 409 -
+2026-10-28 14:47:33,262 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "PUT /users/2 HTTP/1.1" 200 -
+2026-10-28 14:47:33,352 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "GET /users/1/tasks HTTP/1.1" 200 -
+2026-10-28 14:47:33,526 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "POST /login HTTP/1.1" 200 -
+2026-10-28 14:47:33,689 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "POST /login HTTP/1.1" 401 -
+2026-10-28 14:47:33,788 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "GET /reports/summary HTTP/1.1" 200 -
+2026-10-28 14:47:33,881 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "GET /reports/user/1 HTTP/1.1" 200 -
+2026-10-28 14:47:33,967 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:33] "GET /reports/user/9999 HTTP/1.1" 404 -
+2026-10-28 14:47:34,064 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:34] "GET /categories HTTP/1.1" 200 -
+2026-10-28 14:47:34,161 INFO controllers.category_controller: Categoria criada id=5
+2026-10-28 14:47:34,161 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:34] "POST /categories HTTP/1.1" 201 -
+2026-10-28 14:47:34,254 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:34] "PUT /categories/1 HTTP/1.1" 200 -
+2026-10-28 14:47:34,358 INFO controllers.category_controller: Categoria deletada id=5
+2026-10-28 14:47:34,359 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:34] "DELETE /categories/5 HTTP/1.1" 200 -
+2026-10-28 14:47:34,458 INFO controllers.user_controller: Usuário deletado id=3
+2026-10-28 14:47:34,458 INFO werkzeug: 127.0.0.1 - - [28/Oct/2026 14:47:34] "DELETE /users/3 HTTP/1.1" 200 -
+
+$ curl /  →  200    curl /health  →  200    curl /nope  →  404
+
+$ OUT_DIR=<scratchpad>/after BASE_URL=http://localhost:5002 ./scripts/smoke-test-project-3.sh
+task-manager-api @ http://localhost:5002
+  ✓ GET    /tasks                                   200
+  ✓ GET    /tasks/search?q=login&status=in_progress 200
+  ✓ GET    /tasks/stats                             200
+  ✓ GET    /tasks/1                                 200
+  ✓ GET    /tasks/9999                              404
+  ✓ POST   /tasks                                   201
+  ✓ POST   /tasks                                   400
+  ✓ PUT    /tasks/2                                 200
+  ✓ DELETE /tasks/3                                 200
+  ✓ GET    /users                                   200
+  ✓ GET    /users/1                                 200
+  ✓ GET    /users/9999                              404
+  ✓ POST   /users                                   201
+  ✓ POST   /users                                   409
+  ✓ PUT    /users/2                                 200
+  ✓ GET    /users/1/tasks                           200
+  ✓ POST   /login                                   200
+  ✓ POST   /login                                   401
+  ✓ GET    /reports/summary                         200
+  ✓ GET    /reports/user/1                          200
+  ✓ GET    /reports/user/9999                       404
+  ✓ GET    /categories                              200
+  ✓ POST   /categories                              201
+  ✓ PUT    /categories/1                            200
+  ✓ DELETE /categories/5                            200
+  ✓ DELETE /users/3                                 200
+--------------------------------
+  26 passed | 0 failed
+
+$ comparação de formato (chaves de topo) baseline × after, 26 respostas
+(sem DIFF = formatos iguais)
+
+$ cat after/login_ok.json
+{"message":"Login realizado com sucesso","token":"eyJ1aWQiOjF9.auI1NQ.tDIMTAlrJFs9KuodCgF6XWS4moI","user":{"active":true,"created_at":"2026-10-28 17:47:30.989433","email":"joao@email.com","id":1,"name":"Jo\u00e3o Silva","role":"admin"}}
+
+
+$ .venv/bin/python -I verify_token.py after/login_ok.json
+✓ token emitido aceito, uid=1
+✓ forjado rejeitado: fake-jwt-token-2
+✓ forjado rejeitado: eyJ1aWQiOjF9.auI1NQ.tDIMTAlrJFs9KuodCgF6
+✓ forjado rejeitado: eyJ1aWQiOjJ9.auI1NQ.tDIMTAlrJFs9KuodCgF6
+✓ rejeitado com outra SECRET_KEY
+
+$ grep -rn -E "fake-jwt|LOGIN_TOKEN_PREFIX" task-manager-api (sem .venv/.claude)
+nenhum fake-jwt / LOGIN_TOKEN_PREFIX
+
+$ cp <scratchpad>/tasks.db.bak instance/tasks.db && shasum instance/tasks.db
+80f283d0ad3251a72dcfaae1e91f9603829e6825  task-manager-api/instance/tasks.db
+$ lsof -nP -iTCP:5002 -sTCP:LISTEN
+porta 5002 livre

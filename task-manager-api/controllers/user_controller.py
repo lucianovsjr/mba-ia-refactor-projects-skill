@@ -3,8 +3,9 @@ import logging
 from database import transaction
 from models.task import Task
 from models.user import User
-from utils.constants import DEFAULT_ROLE, LOGIN_TOKEN_PREFIX
+from utils.constants import DEFAULT_ROLE
 from utils.errors import ConflictError, ForbiddenError, NotFoundError, UnauthorizedError
+from utils.tokens import issue_login_token
 from utils.validators import validate_login, validate_user_create, validate_user_update
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ def delete_user(user_id):
     logger.info("Usuário deletado id=%s", user_id)
 
 
-def login(data):
+def login(data, secret_key):
     email, password = validate_login(data)
     user = User.find_by_email(email)
     if user is None or not user.check_password(password):
@@ -76,4 +77,4 @@ def login(data):
         with transaction():
             user.set_password(password)
         logger.info("Hash de senha legado regravado id=%s", user.id)
-    return user, LOGIN_TOKEN_PREFIX + str(user.id)
+    return user, issue_login_token(user.id, secret_key)

@@ -33,6 +33,19 @@ check() {
   rm -f "$tmp"
 }
 
+# Uso: assert <descrição> <comando...> — conta como passou se o comando sair com 0.
+assert() {
+  local label="$1"
+  shift
+  if "$@"; then
+    PASS=$((PASS + 1))
+    printf "  ✓ %-6s %-40s %s\n" "ASSERT" "$label" "ok"
+  else
+    FAIL=$((FAIL + 1))
+    printf "  ✗ %-6s %-40s %s\n" "ASSERT" "$label" "falhou"
+  fi
+}
+
 summary() {
   echo "--------------------------------"
   echo "  $PASS passed | $FAIL failed"

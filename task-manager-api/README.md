@@ -25,4 +25,4 @@ cp .env.example .env            # opcional; ajuste SECRET_KEY, PORT, CORS_ORIGIN
 .venv/bin/python app.py         # ou: .venv/bin/flask --app app run
 ```
 
-A aplicação sobe em `http://127.0.0.1:5000` (configurável por `HOST`/`PORT`; no macOS a 5000 costuma estar ocupada pelo AirPlay, use `PORT=5001`). O `seed.py` recria os dados de exemplo no SQLite (`instance/tasks.db`) — **rode-o antes do primeiro boot**. Em produção, defina `SECRET_KEY`; sem ela uma chave aleatória é gerada a cada boot. O modo debug só liga com `FLASK_DEBUG=true`.
+A aplicação sobe em `http://127.0.0.1:5000` (configurável por `HOST`/`PORT`; no macOS a 5000 costuma estar ocupada pelo AirPlay, use `PORT=5001`). O `seed.py` recria os dados de exemplo no SQLite (`instance/tasks.db`) — **rode-o antes do primeiro boot**. Em produção, defina `SECRET_KEY`; sem ela uma chave aleatória é gerada a cada boot, e os tokens de login (assinados com essa chave) deixam de valer a cada restart. O modo debug só liga com `FLASK_DEBUG=true`.
